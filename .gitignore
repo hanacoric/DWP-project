@@ -1,0 +1,5 @@
+# Sensitive Configuration Files
+src/includes/db.php
+src/includes/db_config.php
+.env
+```
