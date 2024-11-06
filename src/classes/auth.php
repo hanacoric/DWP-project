@@ -10,8 +10,9 @@ class Auth
         $this->db = $db;
     }
 
-    //login method
-    public function login($username, $password) {
+    // Login method
+    public function login($username, $password)
+    {
         $username = trim($username);
         $password = trim($password);
 
@@ -33,20 +34,23 @@ class Auth
                 return false;
             }
         } catch (PDOException $e) {
-            echo "Login error: " . $e->getMessage();
+            error_log("Login error: " . $e->getMessage());
             return false;
         }
     }
 
-    public function isLoggedIn() {
+    // Check if user is logged in
+    public function isLoggedIn()
+    {
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
         }
         return isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true;
     }
 
-//logout method
-    public function logout() {
+    // Logout method
+    public function logout()
+    {
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
         }
@@ -54,8 +58,9 @@ class Auth
         session_destroy();
     }
 
-    //register method
-    public function register($username, $email, $password) {
+    // Register method
+    public function register($username, $email, $password)
+    {
         $username = trim($username);
         $email = trim($email);
         $password = trim($password);
@@ -68,8 +73,7 @@ class Auth
         $existingUser = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if ($existingUser) {
-            echo "Username or email already exists.";
-            return false;
+            return false; // No need to echo; handle error in calling code
         }
 
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
@@ -84,11 +88,8 @@ class Auth
             $stmt->execute();
             return true;
         } catch (PDOException $e) {
-            echo "Registration error: " . $e->getMessage();
+            error_log("Registration error: " . $e->getMessage());
             return false;
         }
     }
-
 }
-
-
