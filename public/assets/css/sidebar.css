@@ -1,0 +1,97 @@
+.sidebar {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-color: #181818;
+    color: #fff;
+    width: 250px;
+    height: 100vh;
+    position: fixed;
+    top: 0;
+    left: 0;
+    padding: 20px;
+    font-family: Helvetica, sans-serif;
+    font-size: 20px;
+}
+
+.sidebar h1 {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 25px;
+    font-size: 35px;
+    font-weight: bold;
+    font-family: Helvetica, sans-serif;
+}
+
+.sidebar h1 span {
+    color: yellow;
+}
+
+.sidebar nav {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.sidebar nav a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    border-radius: 5px;
+    transition: background-color 0.3s ease;
+    text-decoration: none;
+}
+
+.sidebar nav a:hover {
+    background-color: #282828;
+}
+
+.sidebar nav a.active {
+    background-color: #383838;
+}
+
+.sidebar nav a.active span.icon {
+    color: yellow;
+}
+
+.sidebar nav .icon {
+    font-size: 18px;
+}
+
+.sidebar nav .profile-icon {
+    color: yellow;
+}
+
+.sidebar nav .home-icon {
+    color: yellow;
+}
+
+.sidebar nav .upload-icon {
+    color: yellow;
+}
+
+.sidebar nav .likes-icon {
+    color: yellow;
+}
+
+.sidebar nav .comments-icon {
+    color: yellow;
+}
+
+.sidebar nav .trending-icon {
+    color: yellow;
+}
+
+.sidebar nav .settings-icon {
+    color: yellow;
+}
+
+.sidebar nav a span {
+    color: #fff;
+    font-weight: bold;
+}
+.sidebar-icon {
+    width: 50px;
+    height: 50px;
+}
