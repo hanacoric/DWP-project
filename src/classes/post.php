@@ -100,6 +100,32 @@ class Post{
         }
     }
 
+    public function getRecentPosts() {
+        $sql = "SELECT * FROM Post ORDER BY UploadDate DESC LIMIT 10";
+        $stmt = $this->db->prepare($sql);
+
+        try {
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            echo "Error fetching recent posts: " . $e->getMessage();
+            return [];
+        }
+    }
+
+    public function getTrendingPosts() {
+        $sql = "SELECT * FROM Post WHERE Trending = 1 ORDER BY UploadDate DESC LIMIT 10";
+        $stmt = $this->db->prepare($sql);
+
+        try {
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            echo "Error fetching trending posts: " . $e->getMessage();
+            return [];
+        }
+    }
+
 
     //UPDATE (update post)
     public function updatePost($PostID, $newCaption){
@@ -138,3 +164,4 @@ class Post{
     }
 
 }
+

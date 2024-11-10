@@ -1,26 +1,27 @@
+body {
+    background-color: black;
+    color: white;
+    font-family: sans-serif;
+    margin: 0;
+}
+
 .sidebar {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    background-color: #181818;
-    color: #fff;
-    width: 250px;
+    background-color: #111;
+    width: 300px;
     height: 100vh;
     position: fixed;
     top: 0;
     left: 0;
     padding: 20px;
-    font-family: Helvetica, sans-serif;
-    font-size: 20px;
+    box-sizing: border-box;
+    transition: all 0.3s ease;
 }
 
 .sidebar h1 {
-    display: flex;
-    justify-content: center;
-    margin-bottom: 25px;
-    font-size: 35px;
-    font-weight: bold;
-    font-family: Helvetica, sans-serif;
+    color: white;
+    font-size: 2.5em;
+    margin-bottom: 20px;
+    text-align: center;
 }
 
 .sidebar h1 span {
@@ -28,70 +29,31 @@
 }
 
 .sidebar nav {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
+    margin-top: 20px;
 }
 
 .sidebar nav a {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px;
-    border-radius: 5px;
-    transition: background-color 0.3s ease;
+    display: block;
+    padding: 15px;
+    color: white;
     text-decoration: none;
+    font-weight: bold;
+    font-size: 1.4em;
+    border-radius: 5px;
+    transition: all 0.3s ease;
 }
 
 .sidebar nav a:hover {
-    background-color: #282828;
+    background-color: #333;
 }
 
-.sidebar nav a.active {
-    background-color: #383838;
-}
-
-.sidebar nav a.active span.icon {
+.sidebar nav a i {
+    margin-right: 10px;
+    font-size: 2em;
     color: yellow;
 }
 
-.sidebar nav .icon {
-    font-size: 18px;
-}
-
-.sidebar nav .profile-icon {
-    color: yellow;
-}
-
-.sidebar nav .home-icon {
-    color: yellow;
-}
-
-.sidebar nav .upload-icon {
-    color: yellow;
-}
-
-.sidebar nav .likes-icon {
-    color: yellow;
-}
-
-.sidebar nav .comments-icon {
-    color: yellow;
-}
-
-.sidebar nav .trending-icon {
-    color: yellow;
-}
-
-.sidebar nav .settings-icon {
-    color: yellow;
-}
-
-.sidebar nav a span {
-    color: #fff;
-    font-weight: bold;
-}
-.sidebar-icon {
-    width: 50px;
-    height: 50px;
+.content {
+    margin-left: 270px;
+    padding: 20px;
 }

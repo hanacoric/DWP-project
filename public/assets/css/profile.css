@@ -1,0 +1,79 @@
+body{
+    background-color: black;
+    color: #fff;
+    font-family: sans-serif;
+    margin: 0;
+}
+
+.profile-container {
+        color: #fff;
+        padding: 20px;
+        width: calc(100% - 340px); /* Adjust width based on sidebar width */
+        margin-left: 300px; /* Adjust margin based on sidebar width */
+        font-family: sans-serif;
+    }
+
+    .profile-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 50%;
+        margin-bottom: 20px;
+    }
+
+    .profile-picture-section {
+        position: relative;
+        width: 150px;
+        height: 150px;
+    }
+
+    .profile-picture {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+
+    .change-photo-btn {
+        position: absolute;
+        bottom: 10px;
+        right: 10px;
+        padding: 5px 10px;
+        background-color: #ffc107; /* Yellow color */
+        color: #181818; /* Dark text color */
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+
+    .profile-info {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .profile-info label {
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+
+    .profile-info input {
+        padding: 8px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        width: 250px; /* Adjust width as needed */
+        margin-bottom: 10px;
+        background-color: #282828;
+        color: #fff;
+    }
+
+    .profile-fields {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .profile-fields label {
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+

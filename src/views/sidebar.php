@@ -1,25 +1,24 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>Sidebar</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <link rel="stylesheet" href="../../public/assets/css/sidebar.css">
 </head>
 <body>
 <div class="sidebar">
     <h1>Random<span>Shot</span></h1>
     <nav>
-        <a href="profile.php" class="profile-icon"><img src="../../public/assets/images/profileicon.png" alt="Profile Icon" class="sidebar-icon"> Profile</a>
-        <a href="home.php" class="home-icon active"><img src="../../public/assets/images/homeicon.png" alt="Home Icon" class="sidebar-icon"> Home</a>
-        <a href="upload.php" class="upload-icon"><img src="../../public/assets/images/uploadicon.png" alt="Upload Icon" class="sidebar-icon"> Upload</a>
-        <a href="likes.php" class="likes-icon"><img src="../../public/assets/images/likesicon.png" alt="Likes Icon" class="sidebar-icon"> Likes</a>
-        <a href="comments.php" class="comments-icon"><img src="../../public/assets/images/commentsicon.png" alt="Comments Icon" class="sidebar-icon">Comments</a>
-        <a href="trending.php" class="trending-icon"><img src="../../public/assets/images/trendingicon.png" alt="Trending Icon" class="sidebar-icon"> Trending</a>
-        <a href="settings.php" class="settings-icon"><img src="../../public/assets/images/settingsicon.png" alt="Settings Icon" class="sidebar-icon"> Settings</a>
+
+        <a href="../../../DWP/src/views/profile.php" class="profile-icon"><i class="fas fa-user-circle"></i> Profile</a>
+        <a href="../../../DWP/public/index.php" class="home-icon"><i class="fas fa-home "></i> Home</a>
+        <a href="../../../DWP/src/views/upload.php" class="upload-icon"><i class="fas fa-plus-circle "></i> Upload</a>
+        <a href="../../../DWP/src/views/likes.php" class="likes-icon"><i class="fas fa-heart "></i> Likes</a>
+        <a href="../../../DWP/src/views/comments.php" class="comments-icon"><i class="fas fa-comment "></i> Comments</a>
+        <a href="../../../DWP/src/views/trending.php" class="trending-icon"><i class="fas fa-fire "></i> Trending</a>
+        <a href="../../../DWP/src/views/settings.php" class="settings-icon"><i class="fas fa-cog "></i> Settings</a>
     </nav>
 </div>
 </body>
 </html>
-
-

@@ -1,0 +1,105 @@
+/* Reset default margins and padding */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Body and main content styling */
+body {
+    background-color: #000;
+    color: #fff;
+    font-family: Arial, sans-serif;
+}
+
+.main-content {
+    margin-left: 250px; /* Adjust this based on sidebar width */
+    padding: 40px;
+    color: white;
+    font-family: Arial, sans-serif;
+}
+
+/* Profile section styling */
+.profile-section {
+    display: flex;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+.profile-image {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    margin-right: 20px;
+}
+
+.profile-info {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.username {
+    font-size: 2rem;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.bio {
+    font-size: 1rem;
+    color: #bbb;
+}
+
+/* Tabs for Posts and Trending */
+.tabs {
+    display: flex;
+    justify-content: center;
+    border-bottom: 2px solid #333;
+    margin-bottom: 20px;
+}
+
+.tabs a {
+    padding: 10px 20px;
+    color: #888;
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 1.2rem;
+}
+
+.tabs a.active {
+    color: white;
+    border-bottom: 2px solid yellow;
+}
+
+/* Grid styling for recent posts and trending sections */
+.section-title {
+    font-weight: bold;
+    font-size: 1.2rem;
+    margin-bottom: 10px;
+}
+
+.post-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+
+.post {
+    width: 100%;
+    background-color: #222;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 10px;
+    border-radius: 5px;
+}
+
+.post img {
+    width: 100%;
+    border-radius: 5px;
+}
+
+/* Additional spacing for sections */
+.posts, .trending {
+    margin-top: 20px;
+}
