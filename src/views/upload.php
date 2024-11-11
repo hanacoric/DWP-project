@@ -1,5 +1,6 @@
 <?php
 require_once '../includes/db.php';
+require_once '../classes/post.php';
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -16,7 +17,7 @@ $post = new Post($db);
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $caption = htmlspecialchars($_POST['caption']);
     $image = $_FILES['image'];
-    $userId = $_SESSION['user_id'];
+    $userId = $_SESSION['user_ id'];
 
     if ($image['error'] === UPLOAD_ERR_OK) {
         $targetDirectory = "../assets/images/Post/";
@@ -28,9 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $targetFilePath = $targetDirectory . $fileName;
 
         if (move_uploaded_file($image['tmp_name'], $targetFilePath)) {
-
             $imagePath = "assets/images/Post/" . $fileName;
-
 
             if ($post->createPost($imagePath, $caption, $userId)) {
                 echo "Post shared successfully!";
@@ -61,7 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <div class="upload-container">
     <h2>Create New Post</h2>
     <form action="upload.php" method="POST" enctype="multipart/form-data">
-        <label for="image">Select Image:</label>
+        <button type="submit" name="submit">Select image</button>
         <input type="file" name="image" id="image" required>
 
         <label for="caption">Caption:</label>
@@ -74,3 +73,5 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <script src="../../../DWP/public/assets/js/upload.js"></script>
 </body>
 </html>
+
+
