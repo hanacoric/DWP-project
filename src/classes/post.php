@@ -10,69 +10,71 @@ class Post{
     private $UserID;
     private $db;
 
-    public function __construct($db){
+    public function __construct($db)
+    {
         $this->db = $db;
     }
 
-    public function getPostID(){
+    public function getPostID()
+    {
         return $this->PostID;
     }
 
-    public function getImage(){
+    public function getImage()
+    {
         return $this->Image;
     }
 
-    public function setImage($Image){
+    public function setImage($Image)
+    {
         $this->Image = htmlspecialchars($Image);
     }
 
-    public function getCaption(){
+    public function getCaption()
+    {
         return $this->Caption;
     }
 
-    public function setCaption($Caption){
+    public function setCaption($Caption)
+    {
         $this->Caption = htmlspecialchars($Caption);
     }
 
-    public function getUploadDate(){
+    public function getUploadDate()
+    {
         return $this->UploadDate;
     }
 
-    public function getTrending(){
+    public function getTrending()
+    {
         return $this->Trending;
     }
 
-    public function getUserID(){
+    public function getUserID()
+    {
         return $this->UserID;
     }
 
     //CREATE (add a new post)
-    public function createPost($image, $caption, $userID) {
-        $this->setImage($image);
-        $this->setCaption($caption);
-        $this->UserID = $userID;
-        $this->UploadDate = date('Y-m-d H:i:s');
-        $this->Trending = false;
-
-        $sql = "INSERT INTO Post (Image, Caption, UploadDate, Trending, UserID) VALUES (:image, :caption, :uploadDate, :trending, :userID)";
+    public function createPost($imagePath, $caption, $userId) {
+        $sql = "INSERT INTO Post (Image, Caption, UploadDate, UserID) VALUES (:image, :caption, NOW(), :userId)";
         $stmt = $this->db->prepare($sql);
-        $stmt->bindParam(':image', $this->Image);
-        $stmt->bindParam(':caption', $this->Caption);
-        $stmt->bindParam(':uploadDate', $this->UploadDate);
-        $stmt->bindParam(':trending', $this->Trending, PDO::PARAM_BOOL);
-        $stmt->bindParam(':userID', $this->UserID);
+        $stmt->bindParam(':image', $imagePath);
+        $stmt->bindParam(':caption', $caption);
+        $stmt->bindParam(':userId', $userId);
 
         try {
-            $stmt->execute();
-            return true;
+            return $stmt->execute();
         } catch (PDOException $e) {
-            echo "Error creating post: " . $e->getMessage();
+            echo "Error saving post: " . $e->getMessage();
             return false;
         }
     }
 
+
     //READ (get post by ID)
-    public function getPost($PostID){
+    public function getPost($PostID)
+    {
         $this->PostID = $PostID;
         $sql = "SELECT * FROM Post WHERE PostID = :PostID";
         $stmt = $this->db->prepare($sql);
@@ -100,7 +102,8 @@ class Post{
         }
     }
 
-    public function getRecentPosts() {
+    public function getRecentPosts()
+    {
         $sql = "SELECT * FROM Post ORDER BY UploadDate DESC LIMIT 10";
         $stmt = $this->db->prepare($sql);
 
@@ -111,9 +114,21 @@ class Post{
             echo "Error fetching recent posts: " . $e->getMessage();
             return [];
         }
+        $sql = "SELECT Image, Caption FROM Post ORDER BY UploadDate DESC";
+        $stmt = $this->db->prepare($sql);
+
+        try {
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            echo "Error fetching posts: " . $e->getMessage();
+            return [];
+        }
     }
 
-    public function getTrendingPosts() {
+
+    public function getTrendingPosts()
+    {
         $sql = "SELECT * FROM Post WHERE Trending = 1 ORDER BY UploadDate DESC LIMIT 10";
         $stmt = $this->db->prepare($sql);
 
@@ -128,7 +143,8 @@ class Post{
 
 
     //UPDATE (update post)
-    public function updatePost($PostID, $newCaption){
+    public function updatePost($PostID, $newCaption)
+    {
         $this->Caption = htmlspecialchars($newCaption);
         $this->PostID = $PostID;
 
@@ -148,7 +164,8 @@ class Post{
     }
 
     //DELETE (delete post)
-    public function deletePost($PostID){
+    public function deletePost($PostID)
+    {
         $this->PostID = $PostID;
         $sql = "DELETE FROM Post WHERE PostID = :PostID";
         $stmt = $this->db->prepare($sql);
@@ -164,4 +181,5 @@ class Post{
     }
 
 }
+
 
