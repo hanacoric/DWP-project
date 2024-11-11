@@ -1,10 +1,9 @@
 <?php
-require_once '../src/includes/db.php';  // Ensure correct path to your db connection file
+require_once '../src/includes/db.php';
 
-// Initialize the database connection
+
 $db = new PDO("mysql:host=localhost;port=3306;dbname=SemesterProjectDB", "hana", "123456");
 
-// Fetch posts from the Post table
 try {
     $sql = "SELECT PostID, Image, Caption FROM Post ORDER BY UploadDate DESC";
     $stmt = $db->prepare($sql);

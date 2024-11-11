@@ -39,8 +39,8 @@ body{
         bottom: 10px;
         right: 10px;
         padding: 5px 10px;
-        background-color: #ffc107; /* Yellow color */
-        color: #181818; /* Dark text color */
+        background-color: #ffc107;
+        color: #181818;
         border: none;
         border-radius: 5px;
         cursor: pointer;
@@ -61,7 +61,7 @@ body{
         padding: 8px;
         border: 1px solid #ccc;
         border-radius: 5px;
-        width: 250px; /* Adjust width as needed */
+        width: 250px;
         margin-bottom: 10px;
         background-color: #282828;
         color: #fff;

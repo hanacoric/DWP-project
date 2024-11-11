@@ -1,33 +1,24 @@
 <?php
-// upload.php
+require_once '../includes/db.php';
 
-// Include necessary files and initialize database
-require_once '../includes/db.php'; // Make sure this path is correct
-require_once '../classes/post.php';
-
-// Start session to access user ID
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// Redirect to login if the user is not logged in
 if (!isset($_SESSION['user_id'])) {
     header("Location: /DWP/public/login.php");
     exit();
 }
 
-// Initialize database connection and Post object
 $db = new PDO("mysql:host=localhost;port=3306;dbname=SemesterProjectDB", "hana", "123456");
 $post = new Post($db);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $caption = htmlspecialchars($_POST['caption']); // Sanitize caption input
+    $caption = htmlspecialchars($_POST['caption']);
     $image = $_FILES['image'];
-    $userId = $_SESSION['user_id']; // Get the user ID from the session
+    $userId = $_SESSION['user_id'];
 
-    // Check if the image file is valid
     if ($image['error'] === UPLOAD_ERR_OK) {
-        // Set target directory and file path for the uploaded image
         $targetDirectory = "../assets/images/Post/";
         if (!is_dir($targetDirectory)) {
             mkdir($targetDirectory, 0777, true); // Create directory if it doesn't exist
@@ -36,15 +27,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $fileName = basename($image['name']);
         $targetFilePath = $targetDirectory . $fileName;
 
-        // Move the uploaded file to the target directory
         if (move_uploaded_file($image['tmp_name'], $targetFilePath)) {
-            // Save the post in the database
-            $imagePath = "assets/images/Post/" . $fileName; // This is the path stored in the database
 
-            // Insert post data into the database
+            $imagePath = "assets/images/Post/" . $fileName;
+
+
             if ($post->createPost($imagePath, $caption, $userId)) {
                 echo "Post shared successfully!";
-                header("Location: /DWP/public/index.php"); // Redirect to homepage after successful post
+                header("Location: /DWP/public/index.php");
                 exit();
             } else {
                 echo "Error: Unable to save the post in the database.";

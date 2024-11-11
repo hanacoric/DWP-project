@@ -1,27 +1,27 @@
-/* Reset default margins and padding */
+
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
 }
 
-/* Body and main content styling */
+
 body {
     background-color: #000;
     color: #fff;
     font-family: Arial, sans-serif;
 }
 
-/* Main content area */
+
 .main-content {
     padding: 20px;
     color: white;
-    width: calc(100% - 250px); /* Adjust for sidebar width */
+    width: calc(100% - 250px);
     margin-left: 250px;
     background-color: black;
 }
 
-/* Profile section at the top */
+
 .profile-section {
     display: flex;
     align-items: center;
@@ -47,7 +47,7 @@ body {
     color: #ddd;
 }
 
-/* Tabs for POSTS and TRENDING */
+
 .tabs {
     display: flex;
     justify-content: center;
@@ -69,7 +69,7 @@ body {
     border-bottom: 2px solid yellow;
 }
 
-/* Post grid layout */
+
 .post-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -96,7 +96,7 @@ body {
     font-size: 0.9em;
 }
 
-/* Hide the trending section by default */
+
 .trending {
     display: none;
 }
