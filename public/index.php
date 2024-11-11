@@ -18,12 +18,24 @@ $userProfile = $userObj->getUserProfile($userID);
 try {
     $sql = "SELECT PostID, Image, Caption FROM Post WHERE UserID = :userID ORDER BY UploadDate DESC";
     $stmt = $db->prepare($sql);
-    $stmt->bindParam(':userID', $userID, PDO::PARAM_INT); // Bind the userID parameter
+    $stmt->bindParam(':userID', $userID, PDO::PARAM_INT);
     $stmt->execute();
     $posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
     echo "Error fetching posts: " . $e->getMessage();
     $posts = [];
+}
+
+//trending posts
+try {
+    $trendingSql = "SELECT PostID, Image, Caption FROM Post WHERE UserID = :userID AND Trending = TRUE ORDER BY UploadDate DESC";
+    $trendingStmt = $db->prepare($trendingSql);
+    $trendingStmt->bindParam(':userID', $userID, PDO::PARAM_INT);
+    $trendingStmt->execute();
+    $trendingPosts = $trendingStmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    echo "Error fetching trending posts: " . $e->getMessage();
+    $trendingPosts = [];
 }
 ?>
 <!DOCTYPE html>
@@ -42,16 +54,15 @@ try {
         <img src="<?php echo isset($userProfile['ProfilePicture']) ? htmlspecialchars($userProfile['ProfilePicture']) : 'assets/images/profileicon.png'; ?>" alt="Profile Image" class="profile-image">
         <div class="profile-info">
             <h2 class="username"><?php echo htmlspecialchars($userProfile['Username']); ?></h2>
-            <!--<p class="bio"><?php echo htmlspecialchars($userProfile['Bio']); ?></p>-->
         </div>
     </div>
 
     <div class="tabs">
-        <a href="#" class="active">POSTS</a>
-        <a href="#">TRENDING</a>
+        <a href="#" class="active" onclick="showSection('posts')">POSTS</a>
+        <a href="#" onclick="showSection('trending')">TRENDING</a>
     </div>
 
-    <section class="posts">
+    <section id="posts" class="post-section">
         <div class="post-grid">
             <?php if (!empty($posts)): ?>
                 <?php foreach ($posts as $post): ?>
@@ -65,6 +76,24 @@ try {
             <?php endif; ?>
         </div>
     </section>
+
+    <section id="trending" class="post-section" style="display: none;">
+        <div class="post-grid">
+            <?php if (!empty($trendingPosts)): ?>
+                <?php foreach ($trendingPosts as $post): ?>
+                    <div class="post">
+                        <img src="<?php echo htmlspecialchars($post['Image']); ?>" alt="Trending Post Image">
+                        <p><?php echo htmlspecialchars($post['Caption']); ?></p>
+                    </div>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <p>No trending posts available.</p>
+            <?php endif; ?>
+        </div>
+    </section>
 </div>
+
+<script src="assets/js/home.js"></script>
+
 </body>
 </html>
