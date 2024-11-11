@@ -11,33 +11,23 @@ class Auth
     }
 
     // Login method
-    public function login($username, $password)
-    {
-        $username = trim($username);
-        $password = trim($password);
-
+    public function login($username, $password) {
         $sql = "SELECT * FROM User WHERE Username = :username";
         $stmt = $this->db->prepare($sql);
         $stmt->bindParam(':username', $username);
+        $stmt->execute();
 
-        try {
-            $stmt->execute();
-            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-            if ($user && password_verify($password, $user['Password'])) {
-                session_start();
-                $_SESSION['user_id'] = $user['UserID'];
-                $_SESSION['username'] = $user['Username'];
-                $_SESSION['logged_in'] = true;
-                return true;
-            } else {
-                return false;
-            }
-        } catch (PDOException $e) {
-            error_log("Login error: " . $e->getMessage());
-            return false;
+        if ($user && password_verify($password, $user['Password'])) {
+            session_start(); // Ensure session is started
+            $_SESSION['user_id'] = $user['UserID'];
+            $_SESSION['logged_in'] = true;
+            return true;
         }
+        return false;
     }
+
 
     // Check if user is logged in
     public function isLoggedIn()
@@ -47,6 +37,7 @@ class Auth
         }
         return isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true;
     }
+
 
     // Logout method
     public function logout()

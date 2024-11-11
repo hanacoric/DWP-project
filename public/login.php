@@ -1,5 +1,9 @@
 <?php
 // Backend
+session_start();
+require_once '../src/includes/db.php';
+require_once '../src/classes/auth.php';
+
 require_once '../src/includes/db.php';
 require_once '../src/classes/auth.php';
 

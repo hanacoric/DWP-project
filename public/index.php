@@ -1,19 +1,30 @@
 <?php
-require_once '../src/includes/db.php';
+session_start();
 
+require_once '../src/includes/db.php';
+require_once '../src/classes/user.php';
+
+if (!isset($_SESSION['user_id'])) {
+    header("Location: login.php");
+    exit();
+}
 
 $db = new PDO("mysql:host=localhost;port=3306;dbname=SemesterProjectDB", "hana", "123456");
+$userObj = new User($db);
+
+$userID = $_SESSION['user_id'];
+$userProfile = $userObj->getUserProfile($userID);
 
 try {
-    $sql = "SELECT PostID, Image, Caption FROM Post ORDER BY UploadDate DESC";
+    $sql = "SELECT PostID, Image, Caption FROM Post WHERE UserID = :userID ORDER BY UploadDate DESC";
     $stmt = $db->prepare($sql);
+    $stmt->bindParam(':userID', $userID, PDO::PARAM_INT); // Bind the userID parameter
     $stmt->execute();
     $posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
     echo "Error fetching posts: " . $e->getMessage();
     $posts = [];
 }
-
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -28,10 +39,10 @@ try {
 
 <div class="main-content">
     <div class="profile-section">
-        <img src="assets/images/profileicon.png" alt="Profile Image" class="profile-image">
+        <img src="<?php echo isset($userProfile['ProfilePicture']) ? htmlspecialchars($userProfile['ProfilePicture']) : 'assets/images/profileicon.png'; ?>" alt="Profile Image" class="profile-image">
         <div class="profile-info">
-            <h2 class="username">RandomPictures</h2>
-            <p class="bio">Sharing a daily dose of real-life moments. Follow and join the community!</p>
+            <h2 class="username"><?php echo htmlspecialchars($userProfile['Username']); ?></h2>
+            <!--<p class="bio"><?php echo htmlspecialchars($userProfile['Bio']); ?></p>-->
         </div>
     </div>
 

@@ -158,8 +158,6 @@ class User {
     }
 
 
-
-
 // Method to update the profile picture
 public function updateProfilePicture($userID, $profilePicturePath) {
     $sql = "UPDATE UserProfile SET ProfilePicture = :profilePicture WHERE UserID = :userID";
@@ -177,33 +175,32 @@ public function updateProfilePicture($userID, $profilePicturePath) {
 }
 
 // Method to update other profile information
-public function updateUserProfile($userID, $username, $bio, $email, $gender, $firstName, $lastName) {
-    $this->username = htmlspecialchars($username);
-    $this->email = htmlspecialchars($email);
+    public function updateUserProfile($userID, $username, $bio, $email, $gender, $firstName, $lastName) {
+        $this->username = htmlspecialchars($username);
+        $this->email = htmlspecialchars($email);
 
-    // Update User table for username and email
-    $sqlUser = "UPDATE User SET Username = :username, Email = :email WHERE UserID = :userID";
-    $stmtUser = $this->db->prepare($sqlUser);
-    $stmtUser->bindParam(':username', $this->username);
-    $stmtUser->bindParam(':email', $this->email);
-    $stmtUser->bindParam(':userID', $userID);
+        $sqlUser = "UPDATE User SET Username = :username, Email = :email WHERE UserID = :userID";
+        $stmtUser = $this->db->prepare($sqlUser);
+        $stmtUser->bindParam(':username', $this->username);
+        $stmtUser->bindParam(':email', $this->email);
+        $stmtUser->bindParam(':userID', $userID);
 
-    // Update UserProfile table for other profile fields
-    $sqlProfile = "UPDATE UserProfile SET Bio = :bio, Gender = :gender, FirstName = :firstName, LastName = :lastName WHERE UserID = :userID";
-    $stmtProfile = $this->db->prepare($sqlProfile);
-    $stmtProfile->bindParam(':bio', $bio);
-    $stmtProfile->bindParam(':gender', $gender);
-    $stmtProfile->bindParam(':firstName', $firstName);
-    $stmtProfile->bindParam(':lastName', $lastName);
-    $stmtProfile->bindParam(':userID', $userID);
+        $sqlProfile = "UPDATE UserProfile SET Bio = :bio, Gender = :gender, FirstName = :firstName, LastName = :lastName WHERE UserID = :userID";
+        $stmtProfile = $this->db->prepare($sqlProfile);
+        $stmtProfile->bindParam(':bio', $bio);
+        $stmtProfile->bindParam(':gender', $gender);
+        $stmtProfile->bindParam(':firstName', $firstName);
+        $stmtProfile->bindParam(':lastName', $lastName);
+        $stmtProfile->bindParam(':userID', $userID);
 
-    try {
-        $stmtUser->execute();
-        $stmtProfile->execute();
-        return true;
-    } catch (PDOException $e) {
-        echo "Error updating profile information: " . $e->getMessage();
-        return false;
+        try {
+            $stmtUser->execute();
+            $stmtProfile->execute();
+            return true;
+        } catch (PDOException $e) {
+            echo "Error updating profile information: " . $e->getMessage();
+            return false;
+        }
     }
-}
+
 }

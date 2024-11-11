@@ -16,7 +16,6 @@
         <a href="../../../DWP/src/views/upload.php" class="upload-icon"><i class="fas fa-plus-circle "></i> Upload</a>
         <a href="../../../DWP/src/views/likes.php" class="likes-icon"><i class="fas fa-heart "></i> Likes</a>
         <a href="../../../DWP/src/views/comments.php" class="comments-icon"><i class="fas fa-comment "></i> Comments</a>
-        <a href="../../../DWP/src/views/trending.php" class="trending-icon"><i class="fas fa-fire "></i> Trending</a>
         <a href="../../../DWP/src/views/settings.php" class="settings-icon"><i class="fas fa-cog "></i> Settings</a>
     </nav>
 </div>

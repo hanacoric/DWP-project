@@ -1,11 +1,4 @@
 
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
-
 body {
     background-color: #000;
     color: #fff;
@@ -16,8 +9,8 @@ body {
 .main-content {
     padding: 20px;
     color: white;
-    width: calc(100% - 250px);
-    margin-left: 250px;
+    width: calc(100% - 220px);
+
     background-color: black;
 }
 

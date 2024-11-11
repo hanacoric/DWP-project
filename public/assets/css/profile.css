@@ -8,7 +8,7 @@ body{
 .profile-container {
         color: #fff;
         padding: 20px;
-        width: calc(100% - 340px); /* Adjust width based on sidebar width */
+        width: calc(100% - 350px); /* Adjust width based on sidebar width */
         margin-left: 300px; /* Adjust margin based on sidebar width */
         font-family: sans-serif;
     }
@@ -50,18 +50,20 @@ body{
         display: flex;
         flex-direction: column;
         align-items: center;
+
     }
 
     .profile-info label {
         font-weight: bold;
         margin-bottom: 5px;
+
     }
 
     .profile-info input {
         padding: 8px;
         border: 1px solid #ccc;
         border-radius: 5px;
-        width: 250px;
+        width: 100px;
         margin-bottom: 10px;
         background-color: #282828;
         color: #fff;
@@ -70,10 +72,56 @@ body{
     .profile-fields {
         display: flex;
         flex-direction: column;
+        width: 70%;
     }
 
     .profile-fields label {
         font-weight: bold;
         margin-bottom: 5px;
     }
+
+.success-message {
+    color: #28a745;
+    text-align: center;
+    margin-top: 10px;
+}
+
+.success-message {
+    color: #28a745;
+    text-align: center;
+    margin-top: 10px;
+}
+
+.profile-fields label {
+    font-weight: bold;
+    display: block;
+    margin-bottom: 5px;
+}
+
+.profile-fields input[type="text"],
+.profile-fields input[type="email"],
+.profile-fields select,
+.profile-fields textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    margin-bottom: 15px;
+    background-color: #333;
+    color: #fff;
+}
+
+.edit-section button {
+    padding: 10px 20px;
+    background-color: #ffcc00;
+    color: #000;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.edit-section button:hover {
+    background-color: #ffbb00;
+}
 

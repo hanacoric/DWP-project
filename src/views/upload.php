@@ -17,7 +17,7 @@ $post = new Post($db);
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $caption = htmlspecialchars($_POST['caption']);
     $image = $_FILES['image'];
-    $userId = $_SESSION['user_ id'];
+    $userId = $_SESSION['user_id']; // Corrected the typo here
 
     if ($image['error'] === UPLOAD_ERR_OK) {
         $targetDirectory = "../assets/images/Post/";
@@ -32,7 +32,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $imagePath = "assets/images/Post/" . $fileName;
 
             if ($post->createPost($imagePath, $caption, $userId)) {
-                echo "Post shared successfully!";
                 header("Location: /DWP/public/index.php");
                 exit();
             } else {
@@ -73,5 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <script src="../../../DWP/public/assets/js/upload.js"></script>
 </body>
 </html>
+
+
 
 

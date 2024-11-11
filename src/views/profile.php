@@ -1,18 +1,18 @@
 <?php
-// profile.php
-
 require_once '../includes/db.php';
 require_once '../classes/user.php';
 
 session_start();
+
 if (!isset($_SESSION['user_id'])) {
     header("Location: /DWP/public/login.php");
     exit();
 }
-
 $db = new PDO("mysql:host=localhost;port=3306;dbname=SemesterProjectDB", "hana", "123456");
 $userObj = new User($db);
+
 $userID = $_SESSION['user_id'];
+
 $userProfile = $userObj->getUserProfile($userID);
 
 if (!$userProfile) {
@@ -29,18 +29,19 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $newFirstName = htmlspecialchars($nameParts[0]);
     $newLastName = isset($nameParts[1]) ? htmlspecialchars($nameParts[1]) : '';
 
-    // Check if a new profile picture was uploaded
     if (isset($_FILES['profile_picture']) && $_FILES['profile_picture']['error'] === UPLOAD_ERR_OK) {
         $imagePath = '/DWP/public/assets/images/profilePicture/' . basename($_FILES['profile_picture']['name']);
         move_uploaded_file($_FILES['profile_picture']['tmp_name'], $_SERVER['DOCUMENT_ROOT'] . $imagePath);
         $userObj->updateProfilePicture($userID, $imagePath);
     }
 
-    // Update the rest of the profile fields
     $userObj->updateUserProfile($userID, $newUsername, $newBio, $newEmail, $newGender, $newFirstName, $newLastName);
+
+    $userProfile = $userObj->getUserProfile($userID);
     header("Location: profile.php?update=success");
     exit();
 }
+
 ?>
 
 <!DOCTYPE html>
@@ -90,6 +91,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         </div>
     </form>
 </div>
+<?php if (isset($_GET['update']) && $_GET['update'] == 'success'): ?>
+    <p class="success-message">Profile updated successfully!</p>
+<?php endif; ?>
 <script src="../../../DWP/public/assets/js/profile.js"></script>
 </body>
 </html>
