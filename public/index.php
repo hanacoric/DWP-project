@@ -3,6 +3,7 @@ session_start();
 
 require_once '../src/includes/db.php';
 require_once '../src/classes/user.php';
+require_once '../src/classes/post.php';
 
 if (!isset($_SESSION['user_id'])) {
     header("Location: login.php");
@@ -26,11 +27,10 @@ try {
     $posts = [];
 }
 
-//trending posts
+// Trending posts
 try {
-    $trendingSql = "SELECT PostID, Image, Caption FROM Post WHERE UserID = :userID AND Trending = TRUE ORDER BY UploadDate DESC";
+    $trendingSql = "SELECT PostID, Image, Caption FROM Post WHERE Trending = TRUE ORDER BY UploadDate DESC";
     $trendingStmt = $db->prepare($trendingSql);
-    $trendingStmt->bindParam(':userID', $userID, PDO::PARAM_INT);
     $trendingStmt->execute();
     $trendingPosts = $trendingStmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
@@ -72,6 +72,7 @@ try {
                         <p><?php echo htmlspecialchars($post['Caption']); ?></p>
                     </div>
                 <?php endforeach; ?>
+
             <?php else: ?>
                 <p>No posts available.</p>
             <?php endif; ?>
@@ -82,8 +83,16 @@ try {
         <div class="post-grid">
             <?php if (!empty($trendingPosts)): ?>
                 <?php foreach ($trendingPosts as $post): ?>
+                    <?php
+                    $imagePath = $post['Image'];
+                    if (strpos($imagePath, 'http') === 0) {
+                        $displayPath = $imagePath; // External URL
+                    } else {
+                        $displayPath = '/DWP/public/' . $imagePath; // Local path
+                    }
+                    ?>
                     <div class="post">
-                        <img src="<?php echo htmlspecialchars($post['Image']); ?>" alt="Trending Post Image">
+                        <img src="<?php echo htmlspecialchars($displayPath); ?>" alt="Trending Post Image">
                         <p><?php echo htmlspecialchars($post['Caption']); ?></p>
                     </div>
                 <?php endforeach; ?>
