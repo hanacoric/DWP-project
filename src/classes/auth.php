@@ -50,8 +50,7 @@ class Auth
     }
 
     // Register method
-    public function register($username, $email, $password)
-    {
+    public function register($username, $email, $password) {
         $username = trim($username);
         $email = trim($email);
         $password = trim($password);
@@ -69,6 +68,7 @@ class Auth
 
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 
+
         $sql = "INSERT INTO User (Username, Email, Password, Status, RoleID) VALUES (:username, :email, :password, 'Active', 1)";
         $stmt = $this->db->prepare($sql);
         $stmt->bindParam(':username', $username);
@@ -77,10 +77,21 @@ class Auth
 
         try {
             $stmt->execute();
+
+
+            $userID = $this->db->lastInsertId();
+
+            // Create a basic profile in UserProfile for the new user
+            $sqlProfile = "INSERT INTO UserProfile (UserID, Bio, Gender, FirstLast) VALUES (:userID, '', '', '')";
+            $stmtProfile = $this->db->prepare($sqlProfile);
+            $stmtProfile->bindParam(':userID', $userID);
+            $stmtProfile->execute();
+
             return true;
         } catch (PDOException $e) {
             error_log("Registration error: " . $e->getMessage());
             return false;
         }
     }
+
 }

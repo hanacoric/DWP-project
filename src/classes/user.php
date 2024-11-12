@@ -87,7 +87,7 @@ class User {
 
     // READ (get user profile by User ID)
     public function getUserProfile($userID) {
-        $sql = "SELECT u.Username, u.Email, p.ProfilePicture, p.Bio, p.Gender, p.FirstName, p.LastName 
+        $sql = "SELECT u.Username, u.Email, p.ProfilePicture, p.Bio, p.Gender, p.FirstLast
             FROM User u 
             LEFT JOIN UserProfile p ON u.UserID = p.UserID 
             WHERE u.UserID = :userID";
@@ -107,8 +107,7 @@ class User {
                     'ProfilePicture' => 'assets/images/default-profile.png',
                     'Bio' => 'This is a default bio.',
                     'Gender' => 'Other',
-                    'FirstName' => 'Default',
-                    'LastName' => 'User'
+                    'FirstLast' => 'Default User'
                 ];
             }
 
@@ -174,33 +173,52 @@ public function updateProfilePicture($userID, $profilePicturePath) {
     }
 }
 
-// Method to update other profile information
-    public function updateUserProfile($userID, $username, $bio, $email, $gender, $firstName, $lastName) {
-        $this->username = htmlspecialchars($username);
-        $this->email = htmlspecialchars($email);
+    // Method to update user profile information
+    public function updateUserProfile($userID, $bio, $gender, $firstLast) {
+        $checkSql = "SELECT COUNT(*) FROM UserProfile WHERE UserID = :userID";
+        $checkStmt = $this->db->prepare($checkSql);
+        $checkStmt->bindParam(':userID', $userID);
+        $checkStmt->execute();
 
-        $sqlUser = "UPDATE User SET Username = :username, Email = :email WHERE UserID = :userID";
-        $stmtUser = $this->db->prepare($sqlUser);
-        $stmtUser->bindParam(':username', $this->username);
-        $stmtUser->bindParam(':email', $this->email);
-        $stmtUser->bindParam(':userID', $userID);
+        if ($checkStmt->fetchColumn() == 0) {
+            $sqlInsert = "INSERT INTO UserProfile (UserID, Bio, Gender, FirstLast) VALUES (:userID, :bio, :gender, :firstLast)";
+            $stmtInsert = $this->db->prepare($sqlInsert);
+            $stmtInsert->bindParam(':userID', $userID);
+            $stmtInsert->bindParam(':bio', $bio);
+            $stmtInsert->bindParam(':gender', $gender);
+            $stmtInsert->bindParam(':firstLast', $firstLast);
 
-        $sqlProfile = "UPDATE UserProfile SET Bio = :bio, Gender = :gender, FirstName = :firstName, LastName = :lastName WHERE UserID = :userID";
-        $stmtProfile = $this->db->prepare($sqlProfile);
-        $stmtProfile->bindParam(':bio', $bio);
-        $stmtProfile->bindParam(':gender', $gender);
-        $stmtProfile->bindParam(':firstName', $firstName);
-        $stmtProfile->bindParam(':lastName', $lastName);
-        $stmtProfile->bindParam(':userID', $userID);
+            try {
+                $stmtInsert->execute();
+                echo "Profile created successfully!";
+                return true;
+            } catch (PDOException $e) {
+                echo "Error creating profile: " . $e->getMessage();
+                return false;
+            }
+        } else {
+            $sql = "UPDATE UserProfile SET Bio = :bio, Gender = :gender, FirstLast = :firstLast WHERE UserID = :userID";
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindParam(':bio', $bio);
+            $stmt->bindParam(':gender', $gender);
+            $stmt->bindParam(':firstLast', $firstLast);
+            $stmt->bindParam(':userID', $userID);
 
-        try {
-            $stmtUser->execute();
-            $stmtProfile->execute();
-            return true;
-        } catch (PDOException $e) {
-            echo "Error updating profile information: " . $e->getMessage();
-            return false;
+            try {
+                if ($stmt->execute()) {
+                    echo "Profile updated successfully!";
+                    return true;
+                } else {
+                    echo "Profile update failed.";
+                    print_r($stmt->errorInfo()); // Debugging statement
+                    return false;
+                }
+            } catch (PDOException $e) {
+                echo "Error updating profile information: " . $e->getMessage();
+                return false;
+            }
         }
     }
+
 
 }
