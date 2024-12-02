@@ -1,4 +1,5 @@
 <?php
+global $db;
 session_start();
 
 require_once '../src/includes/db.php';
@@ -10,16 +11,34 @@ if (!isset($_SESSION['user_id'])) {
     exit();
 }
 
-$db = new PDO("mysql:host=localhost;port=3306;dbname=SemesterProjectDB", "hana", "123456");
 $userObj = new User($db);
 
 $userID = $_SESSION['user_id'];
 $userProfile = $userObj->getUserProfile($userID);
 
+// handle like/unlike actions
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'], $_POST['post_id'])) {
+    $postID = intval($_POST['post_id']);
+    $action = $_POST['action'];
+
+    try {
+        if ($action === 'like') {
+            $stmt = $db->prepare("INSERT INTO Likes (UserID, PostID) VALUES (:userId, :postId)");
+            $stmt->execute([':userId' => $userID, ':postId' => $postID]);
+        } elseif ($action === 'unlike') {
+            $stmt = $db->prepare("DELETE FROM Likes WHERE UserID = :userId AND PostID = :postId");
+            $stmt->execute([':userId' => $userID, ':postId' => $postID]);
+        }
+    } catch (PDOException $e) {
+        echo "Error: " . $e->getMessage();
+        exit();
+    }
+}
+
+// Fetch posts from all users
 try {
-    $sql = "SELECT PostID, Image, Caption FROM Post WHERE UserID = :userID ORDER BY UploadDate DESC";
+    $sql = "SELECT Post.PostID, Post.Image, Post.Caption, User.Username FROM Post JOIN User ON Post.UserID = User.UserID ORDER BY Post.UploadDate DESC;";
     $stmt = $db->prepare($sql);
-    $stmt->bindParam(':userID', $userID, PDO::PARAM_INT);
     $stmt->execute();
     $posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
@@ -27,15 +46,11 @@ try {
     $posts = [];
 }
 
-// Trending posts
-try {
-    $trendingSql = "SELECT PostID, Image, Caption FROM Post WHERE Trending = TRUE ORDER BY UploadDate DESC";
-    $trendingStmt = $db->prepare($trendingSql);
-    $trendingStmt->execute();
-    $trendingPosts = $trendingStmt->fetchAll(PDO::FETCH_ASSOC);
-} catch (PDOException $e) {
-    echo "Error fetching trending posts: " . $e->getMessage();
-    $trendingPosts = [];
+//like count for each post
+function fetchLikeCount($db, $postID) {
+    $stmt = $db->prepare("SELECT COUNT(*) as likeCount FROM Likes WHERE PostID = :postId");
+    $stmt->execute(['postId' => $postID]);
+    return $stmt->fetch(PDO::FETCH_ASSOC)['likeCount'];
 }
 ?>
 <!DOCTYPE html>
@@ -67,37 +82,22 @@ try {
         <div class="post-grid">
             <?php if (!empty($posts)): ?>
                 <?php foreach ($posts as $post): ?>
-                    <div class="post">
-                        <img src="<?php echo htmlspecialchars($post['Image']); ?>" alt="Post Image">
+                    <div class="post" id="post-<?php echo $post['PostID']; ?>">
+                        <img src="<?php echo htmlspecialchars($post['Image']); ?>" alt="Post Image" width="300">
                         <p><?php echo htmlspecialchars($post['Caption']); ?></p>
+                        <p>Posted by: <?php echo htmlspecialchars($post['Username']); ?></p>
+
+                        <form method="POST" class="like-form">
+                            <input type="hidden" name="post_id" value="<?php echo $post['PostID']; ?>">
+                            <button name="action" value="like" type="submit">Like</button>
+                            <button name="action" value="unlike" type="submit">Unlike</button>
+                            <span class="like-count"><?php echo fetchLikeCount($db, $post['PostID']); ?> Likes</span>
+                        </form>
+
                     </div>
                 <?php endforeach; ?>
-
             <?php else: ?>
                 <p>No posts available.</p>
-            <?php endif; ?>
-        </div>
-    </section>
-
-    <section id="trending" class="post-section" style="display: none;">
-        <div class="post-grid">
-            <?php if (!empty($trendingPosts)): ?>
-                <?php foreach ($trendingPosts as $post): ?>
-                    <?php
-                    $imagePath = $post['Image'];
-                    if (strpos($imagePath, 'http') === 0) {
-                        $displayPath = $imagePath; // External URL
-                    } else {
-                        $displayPath = '/DWP/public/' . $imagePath; // Local path
-                    }
-                    ?>
-                    <div class="post">
-                        <img src="<?php echo htmlspecialchars($displayPath); ?>" alt="Trending Post Image">
-                        <p><?php echo htmlspecialchars($post['Caption']); ?></p>
-                    </div>
-                <?php endforeach; ?>
-            <?php else: ?>
-                <p>No trending posts available.</p>
             <?php endif; ?>
         </div>
     </section>
