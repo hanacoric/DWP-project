@@ -16,7 +16,7 @@ $userObj = new User($db);
 $userID = $_SESSION['user_id'];
 $userProfile = $userObj->getUserProfile($userID);
 
-// handle like/unlike actions
+// handle like/unlike actions and add and delete comments
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'], $_POST['post_id'])) {
     $postID = intval($_POST['post_id']);
     $action = $_POST['action'];
@@ -28,6 +28,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'], $_POST['pos
         } elseif ($action === 'unlike') {
             $stmt = $db->prepare("DELETE FROM Likes WHERE UserID = :userId AND PostID = :postId");
             $stmt->execute([':userId' => $userID, ':postId' => $postID]);
+        }elseif ($action === 'comment') {
+            $comment = trim($_POST['comment']);
+            if (!empty($comment)) {
+                $stmt = $db->prepare("INSERT INTO Comments (UserID, PostID, Comment) VALUES (:userId, :postId, :comment)");
+                $stmt->execute([':userId' => $userID, ':postId' => $postID, ':comment' => $comment]);
+            }
+        } elseif ($action === 'delete_comment') {
+            $commentID = intval($_POST['comment_id']);
+            $stmt = $db->prepare("DELETE FROM Comments WHERE CommentID = :commentId AND UserID = :userId");
+            $stmt->execute([':commentId' => $commentID, ':userId' => $userID]);
         }
     } catch (PDOException $e) {
         echo "Error: " . $e->getMessage();
@@ -52,6 +62,16 @@ function fetchLikeCount($db, $postID) {
     $stmt->execute(['postId' => $postID]);
     return $stmt->fetch(PDO::FETCH_ASSOC)['likeCount'];
 }
+
+// Fetch comments for each post
+function fetchComments($db, $postID, $limit = 5) {
+    $stmt = $db->prepare("SELECT Comments.CommentID, Comments.Comment, Comments.Timestamp, User.Username, Comments.UserID FROM Comments JOIN User ON Comments.UserID = User.UserID WHERE Comments.PostID = :postId ORDER BY Comments.Timestamp ASC LIMIT :commentLimit");
+    $stmt->bindParam(':postId', $postID, PDO::PARAM_INT);
+    $stmt->bindParam(':commentLimit', $limit, PDO::PARAM_INT);
+    $stmt->execute();
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -93,7 +113,35 @@ function fetchLikeCount($db, $postID) {
                             <button name="action" value="unlike" type="submit">Unlike</button>
                             <span class="like-count"><?php echo fetchLikeCount($db, $post['PostID']); ?> Likes</span>
                         </form>
+                        <form method="POST" class="comment-form">
+                            <input type="hidden" name="post_id" value="<?php echo $post['PostID']; ?>">
+                            <label>
+                                <textarea name="comment" placeholder="Write a comment..." required></textarea>
+                            </label>
+                            <button name="action" value="comment" type="submit">Post Comment</button>
+                        </form>
 
+                        <h3>Comments</h3>
+                        <ul>
+                            <?php
+                            $comments = fetchComments($db, $post['PostID'], 3);
+                            foreach ($comments as $comment): ?>
+                                <li>
+                                    <strong><?php echo htmlspecialchars($comment['Username']); ?>:</strong>
+                                    <?php echo htmlspecialchars($comment['Comment']); ?>
+                                    <span>(<?php echo $comment['Timestamp']; ?>)</span>
+                                    <?php if ($comment['UserID'] == $userID): ?>
+                                        <form method="POST" style="display:inline;">
+                                            <input type="hidden" name="post_id" value="<?php echo $post['PostID']; ?>">
+                                            <input type="hidden" name="comment_id" value="<?php echo $comment['CommentID']; ?>">
+                                            <button name="action" value="delete_comment" type="submit">Delete</button>
+                                        </form>
+                                    <?php endif; ?>
+                                </li>
+                            <?php endforeach; ?>
+                        </ul>
+
+                        <a href="../src/views/comments.php?post_id=<?php echo $post['PostID'];?>">View All Comments</a>
                     </div>
                 <?php endforeach; ?>
             <?php else: ?>
