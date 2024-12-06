@@ -9,50 +9,36 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 $userID = $_SESSION['user_id'];
+$postID = intval(isset($_GET['post_id']) ? $_GET['post_id'] : 0);
 
 try {
-    $sql = "SELECT Post.PostID, Post.Caption, User.Username AS LikedBy FROM Post  LEFT JOIN Likes ON Post.PostID = Likes.PostID  LEFT JOIN User ON Likes.UserID = User.UserID  WHERE Post.UserID = :userId  ORDER BY Post.UploadDate DESC";
-    $stmt = $db->prepare($sql);
-    $stmt->execute([':userId' => $userID]);
-    $likedPosts = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $stmt = $db->prepare("SELECT User.Username FROM Likes JOIN User ON Likes.UserID = User.UserID WHERE Likes.PostID = :postId");
+    $stmt->execute([':postId' => $postID]);
+    $likes = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
     echo "Error fetching likes: " . $e->getMessage();
-    $likedPosts = [];
+    $likes = [];
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Likes on Your Posts</title>
-    <link rel="stylesheet" href="../../public/assets/css/home.css">
+    <title>Likes</title>
 </head>
 <body>
-<h1>Likes on Your Posts</h1>
-
-<?php if (!empty($likedPosts)): ?>
-    <?php
-    $currentPostID = null;
-    foreach ($likedPosts as $like):
-        if ($currentPostID !== $like['PostID']):
-            if ($currentPostID !== null): ?>
-                </ul>
-            <?php endif;
-            $currentPostID = $like['PostID']; ?>
-            <h3><?php echo htmlspecialchars($like['Caption']); ?></h3>
-            <ul>
-        <?php endif; ?>
-
-        <li><?php echo $like['LikedBy'] !== null ? htmlspecialchars($like['LikedBy']) : "No likes yet"; ?></li>
-
-    <?php endforeach; ?>
-    </ul>
-<?php else: ?>
-    <p>You have no posts with likes yet.</p>
-<?php endif; ?>
+<h1>Users Who Liked This Post</h1>
+<ul>
+    <?php if (!empty($likes)): ?>
+        <?php foreach ($likes as $like): ?>
+            <li><?php echo htmlspecialchars($like['Username']); ?></li>
+        <?php endforeach; ?>
+    <?php else: ?>
+        <p>No likes for this post.</p>
+    <?php endif; ?>
+</ul>
 
 <a href="../../../DWP/public/index.php">Back to Home</a>
 </body>
 </html>
-
+s

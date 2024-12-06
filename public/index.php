@@ -73,31 +73,74 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['post_id'], $_POST['ac
         } elseif ($action === 'unlike') {
             $stmt = $db->prepare("DELETE FROM Likes WHERE UserID = :userId AND PostID = :postId");
             $stmt->execute([':userId' => $userID, ':postId' => $postID]);
-        } elseif ($action === 'comment') {
-            $comment = trim($_POST['comment']);
-            if (!empty($comment)) {
-                $stmt = $db->prepare("INSERT INTO Comments (UserID, PostID, Comment) VALUES (:userId, :postId, :comment)");
-                $stmt->execute([':userId' => $userID, ':postId' => $postID, ':comment' => $comment]);
+     } elseif ($action === 'comment') {
+         $comment = trim($_POST['comment']);
+         if (!empty($comment)) {
+             $db->beginTransaction();
+             try {
+                 $stmt = $db->prepare("INSERT INTO Comments (UserID, PostID, Comment) VALUES (:userId, :postId, :comment)");
+                 $stmt->execute([':userId' => $userID, ':postId' => $postID, ':comment' => $comment]);
 
-                $stmt = $db->prepare("SELECT UserID FROM Post WHERE PostID = :postId");
-                $stmt->execute([':postId' => $postID]);
-                $postOwner = $stmt->fetch(PDO::FETCH_ASSOC)['UserID'];
+                 $stmt = $db->prepare("SELECT User.Username AS CommentingUser, Post.UserID AS PostOwner FROM User JOIN Post ON Post.PostID = :postId WHERE User.UserID = :userId");
+                 $stmt->execute([':userId' => $userID, ':postId' => $postID]);
+                 $data = $stmt->fetch(PDO::FETCH_ASSOC);
 
-                if ($postOwner && $postOwner != $userID) {
-                    $notificationObj->createNotification('Comment', "User $userID commented on your post.", $postOwner, $postID);
+                 if ($data && $data['PostOwner'] && $data['PostOwner'] != $userID) {
+                     $notificationObj->createNotification(
+                         'Comment',
+                         "{$data['CommentingUser']} commented on your post.",
+                         $data['PostOwner'],
+                         $postID
+                     );
+                 }
+
+                 $notificationObj->createNotification(
+                     'Comment',
+                     "You commented on a post.",
+                     $userID,
+                     $postID
+                 );
+
+                 $db->commit();
+             } catch (PDOException $e) {
+                 $db->rollBack();
+                 echo "Error: " . $e->getMessage();
+             }
+         }
+     } elseif ($action === 'delete_comment') {
+         $commentID = intval($_POST['comment_id']);
+         $stmt = $db->prepare("SELECT UserID FROM Comments WHERE CommentID = :commentId");
+         $stmt->execute([':commentId' => $commentID]);
+         $comment = $stmt->fetch(PDO::FETCH_ASSOC);
+
+         if ($comment && $comment['UserID'] == $userID) {
+             $stmt = $db->prepare("DELETE FROM Comments WHERE CommentID = :commentId");
+             $stmt->execute([':commentId' => $commentID]);
+         }
+     }
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['post_id'], $_POST['action'])) {
+            $postID = intval($_POST['post_id']);
+            $action = $_POST['action'];
+
+            try {
+                if ($action === 'unlike') {
+                    $stmt = $db->prepare("DELETE FROM Likes WHERE UserID = :userId AND PostID = :postId");
+                    $stmt->execute([':userId' => $userID, ':postId' => $postID]);
+                    $stmt = $db->prepare("DELETE FROM Notification WHERE UserID = :userId AND PostID = :postId AND ActionType = 'Like'");
+                    $stmt->execute([':userId' => $userID, ':postId' => $postID]);
                 }
+            } catch (PDOException $e) {
+                echo "Error: " . $e->getMessage();
+                exit();
             }
-        } elseif ($action === 'delete_comment') {
-            $commentID = intval($_POST['comment_id']);
-            $stmt = $db->prepare("DELETE FROM Comments WHERE CommentID = :commentId AND UserID = :userId");
-            $stmt->execute([':commentId' => $commentID, ':userId' => $userID]);
         }
+
     } catch (PDOException $e) {
         echo "Error: " . $e->getMessage();
         exit();
     }
 }
-
 try {
     $sql = "SELECT Post.PostID, Post.Image, Post.Caption, User.Username FROM Post JOIN User ON Post.UserID = User.UserID ORDER BY Post.UploadDate DESC";
     $stmt = $db->prepare($sql);
@@ -175,6 +218,7 @@ try {
                         </ul>
                         <a href="../src/views/comments.php?post_id=<?php echo $post['PostID']; ?>">View All Comments</a>
                     </div>
+
                 <?php endforeach; ?>
             <?php else: ?>
                 <p>No posts available.</p>
