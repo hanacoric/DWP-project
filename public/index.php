@@ -31,7 +31,7 @@ function fetchComments($db, $postID, $limit = 3) {
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'], $_POST['post_id'])) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['post_id'], $_POST['action'])) {
     $postID = intval($_POST['post_id']);
     $action = $_POST['action'];
 
@@ -45,14 +45,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'], $_POST['pos
         $stmt = $db->prepare("INSERT INTO Likes (UserID, PostID) VALUES (:userId, :postId)");
         $stmt->execute([':userId' => $userID, ':postId' => $postID]);
 
+        $stmt = $db->prepare("SELECT Username FROM User WHERE UserID = :userId");
+        $stmt->execute([':userId' => $userID]);
+        $likingUsername = $stmt->fetch(PDO::FETCH_ASSOC)['Username'];
+
         $stmt = $db->prepare("SELECT UserID FROM Post WHERE PostID = :postId");
         $stmt->execute([':postId' => $postID]);
         $postOwner = $stmt->fetch(PDO::FETCH_ASSOC)['UserID'];
 
         if ($postOwner && $postOwner != $userID) {
-            $notificationObj->createNotification('Like', "User $userID liked your post.", $postOwner, $postID);
+            $notificationObj->createNotification(
+                'Like',
+                "$likingUsername liked your post.",
+                $postOwner,
+                $postID
+            );
         }
+
+        $notificationObj->createNotification(
+            'Like',
+            "You liked a post.",
+            $userID,
+            $postID
+        );
     }
+
         } elseif ($action === 'unlike') {
             $stmt = $db->prepare("DELETE FROM Likes WHERE UserID = :userId AND PostID = :postId");
             $stmt->execute([':userId' => $userID, ':postId' => $postID]);
