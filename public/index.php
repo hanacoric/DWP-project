@@ -5,34 +5,70 @@ session_start();
 require_once '../src/includes/db.php';
 require_once '../src/classes/user.php';
 require_once '../src/classes/post.php';
+require_once '../src/classes/notification.php';
 
 if (!isset($_SESSION['user_id'])) {
     header("Location: login.php");
     exit();
 }
 
-$userObj = new User($db);
-
 $userID = $_SESSION['user_id'];
+$userObj = new User($db);
+$notificationObj = new Notification($db);
 $userProfile = $userObj->getUserProfile($userID);
 
-// handle like/unlike actions and add and delete comments
+function fetchLikeCount($db, $postID) {
+    $stmt = $db->prepare("SELECT COUNT(*) as likeCount FROM Likes WHERE PostID = :postId");
+    $stmt->execute(['postId' => $postID]);
+    return $stmt->fetch(PDO::FETCH_ASSOC)['likeCount'];
+}
+
+function fetchComments($db, $postID, $limit = 3) {
+    $stmt = $db->prepare("SELECT Comments.CommentID, Comments.Comment, Comments.Timestamp, User.Username, Comments.UserID FROM Comments JOIN User ON Comments.UserID = User.UserID WHERE Comments.PostID = :postId ORDER BY Comments.Timestamp ASC LIMIT :commentLimit");
+    $stmt->bindParam(':postId', $postID, PDO::PARAM_INT);
+    $stmt->bindParam(':commentLimit', $limit, PDO::PARAM_INT);
+    $stmt->execute();
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'], $_POST['post_id'])) {
     $postID = intval($_POST['post_id']);
     $action = $_POST['action'];
 
     try {
-        if ($action === 'like') {
-            $stmt = $db->prepare("INSERT INTO Likes (UserID, PostID) VALUES (:userId, :postId)");
-            $stmt->execute([':userId' => $userID, ':postId' => $postID]);
+     if ($action === 'like') {
+    $stmt = $db->prepare("SELECT COUNT(*) as likeExists FROM Likes WHERE UserID = :userId AND PostID = :postId");
+    $stmt->execute([':userId' => $userID, ':postId' => $postID]);
+    $likeExists = $stmt->fetch(PDO::FETCH_ASSOC)['likeExists'];
+
+    if (!$likeExists) {
+        $stmt = $db->prepare("INSERT INTO Likes (UserID, PostID) VALUES (:userId, :postId)");
+        $stmt->execute([':userId' => $userID, ':postId' => $postID]);
+
+        $stmt = $db->prepare("SELECT UserID FROM Post WHERE PostID = :postId");
+        $stmt->execute([':postId' => $postID]);
+        $postOwner = $stmt->fetch(PDO::FETCH_ASSOC)['UserID'];
+
+        if ($postOwner && $postOwner != $userID) {
+            $notificationObj->createNotification('Like', "User $userID liked your post.", $postOwner, $postID);
+        }
+    }
         } elseif ($action === 'unlike') {
             $stmt = $db->prepare("DELETE FROM Likes WHERE UserID = :userId AND PostID = :postId");
             $stmt->execute([':userId' => $userID, ':postId' => $postID]);
-        }elseif ($action === 'comment') {
+        } elseif ($action === 'comment') {
             $comment = trim($_POST['comment']);
             if (!empty($comment)) {
                 $stmt = $db->prepare("INSERT INTO Comments (UserID, PostID, Comment) VALUES (:userId, :postId, :comment)");
                 $stmt->execute([':userId' => $userID, ':postId' => $postID, ':comment' => $comment]);
+
+                $stmt = $db->prepare("SELECT UserID FROM Post WHERE PostID = :postId");
+                $stmt->execute([':postId' => $postID]);
+                $postOwner = $stmt->fetch(PDO::FETCH_ASSOC)['UserID'];
+
+                if ($postOwner && $postOwner != $userID) {
+                    $notificationObj->createNotification('Comment', "User $userID commented on your post.", $postOwner, $postID);
+                }
             }
         } elseif ($action === 'delete_comment') {
             $commentID = intval($_POST['comment_id']);
@@ -45,9 +81,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'], $_POST['pos
     }
 }
 
-// Fetch posts from all users
 try {
-    $sql = "SELECT Post.PostID, Post.Image, Post.Caption, User.Username FROM Post JOIN User ON Post.UserID = User.UserID ORDER BY Post.UploadDate DESC;";
+    $sql = "SELECT Post.PostID, Post.Image, Post.Caption, User.Username FROM Post JOIN User ON Post.UserID = User.UserID ORDER BY Post.UploadDate DESC";
     $stmt = $db->prepare($sql);
     $stmt->execute();
     $posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -55,23 +90,6 @@ try {
     echo "Error fetching posts: " . $e->getMessage();
     $posts = [];
 }
-
-//like count for each post
-function fetchLikeCount($db, $postID) {
-    $stmt = $db->prepare("SELECT COUNT(*) as likeCount FROM Likes WHERE PostID = :postId");
-    $stmt->execute(['postId' => $postID]);
-    return $stmt->fetch(PDO::FETCH_ASSOC)['likeCount'];
-}
-
-// Fetch comments for each post
-function fetchComments($db, $postID, $limit = 5) {
-    $stmt = $db->prepare("SELECT Comments.CommentID, Comments.Comment, Comments.Timestamp, User.Username, Comments.UserID FROM Comments JOIN User ON Comments.UserID = User.UserID WHERE Comments.PostID = :postId ORDER BY Comments.Timestamp ASC LIMIT :commentLimit");
-    $stmt->bindParam(':postId', $postID, PDO::PARAM_INT);
-    $stmt->bindParam(':commentLimit', $limit, PDO::PARAM_INT);
-    $stmt->execute();
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
-}
-
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -107,25 +125,23 @@ function fetchComments($db, $postID, $limit = 5) {
                         <p><?php echo htmlspecialchars($post['Caption']); ?></p>
                         <p>Posted by: <?php echo htmlspecialchars($post['Username']); ?></p>
 
-                        <form method="POST" class="like-form">
+                        <form method="POST">
                             <input type="hidden" name="post_id" value="<?php echo $post['PostID']; ?>">
                             <button name="action" value="like" type="submit">Like</button>
                             <button name="action" value="unlike" type="submit">Unlike</button>
                             <span class="like-count"><?php echo fetchLikeCount($db, $post['PostID']); ?> Likes</span>
+                            <a href="../src/views/likes.php?post_id=<?php echo $post['PostID']; ?>">See All Likes</a>
                         </form>
+
                         <form method="POST" class="comment-form">
                             <input type="hidden" name="post_id" value="<?php echo $post['PostID']; ?>">
-                            <label>
-                                <textarea name="comment" placeholder="Write a comment..." required></textarea>
-                            </label>
+                            <textarea name="comment" placeholder="Write a comment..." required></textarea>
                             <button name="action" value="comment" type="submit">Post Comment</button>
                         </form>
 
                         <h3>Comments</h3>
                         <ul>
-                            <?php
-                            $comments = fetchComments($db, $post['PostID'], 3);
-                            foreach ($comments as $comment): ?>
+                            <?php foreach (fetchComments($db, $post['PostID'], 3) as $comment): ?>
                                 <li>
                                     <strong><?php echo htmlspecialchars($comment['Username']); ?>:</strong>
                                     <?php echo htmlspecialchars($comment['Comment']); ?>
@@ -140,8 +156,7 @@ function fetchComments($db, $postID, $limit = 5) {
                                 </li>
                             <?php endforeach; ?>
                         </ul>
-
-                        <a href="../src/views/comments.php?post_id=<?php echo $post['PostID'];?>">View All Comments</a>
+                        <a href="../src/views/comments.php?post_id=<?php echo $post['PostID']; ?>">View All Comments</a>
                     </div>
                 <?php endforeach; ?>
             <?php else: ?>
