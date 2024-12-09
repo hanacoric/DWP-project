@@ -11,8 +11,9 @@ class Auth
     }
 
     // Login method
-    public function login($username, $password) {
-        $sql = "SELECT * FROM User WHERE Username = :username";
+    public function login($username, $password)
+    {
+        $sql = "SELECT User.*, Role.RoleName FROM User LEFT JOIN Role ON User.RoleID = Role.RoleID WHERE Username = :username";
         $stmt = $this->db->prepare($sql);
         $stmt->bindParam(':username', $username);
         $stmt->execute();
@@ -20,14 +21,13 @@ class Auth
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if ($user && password_verify($password, $user['Password'])) {
-            session_start(); // Ensure session is started
             $_SESSION['user_id'] = $user['UserID'];
+            $_SESSION['role'] = $user['RoleName'];
             $_SESSION['logged_in'] = true;
             return true;
         }
         return false;
     }
-
 
     // Check if user is logged in
     public function isLoggedIn()
@@ -38,6 +38,14 @@ class Auth
         return isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true;
     }
 
+    // Check if user is an admin
+    public function isAdmin()
+    {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+        return isset($_SESSION['role']) && $_SESSION['role'] === 'Admin';
+    }
 
     // Logout method
     public function logout()
@@ -50,7 +58,8 @@ class Auth
     }
 
     // Register method
-    public function register($username, $email, $password) {
+    public function register($username, $email, $password, $role = 'User')
+    {
         $username = trim($username);
         $email = trim($email);
         $password = trim($password);
@@ -63,25 +72,36 @@ class Auth
         $existingUser = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if ($existingUser) {
-            return false; // No need to echo; handle error in calling code
+            return false;
         }
 
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 
+        // Fetch the RoleID for the provided role
+        $roleSql = "SELECT RoleID FROM Role WHERE RoleName = :roleName";
+        $roleStmt = $this->db->prepare($roleSql);
+        $roleStmt->bindParam(':roleName', $role);
+        $roleStmt->execute();
+        $roleData = $roleStmt->fetch(PDO::FETCH_ASSOC);
 
-        $sql = "INSERT INTO User (Username, Email, Password, Status, RoleID) VALUES (:username, :email, :password, 'Active', 1)";
+        if (!$roleData) {
+            return false;
+        }
+
+        $roleID = $roleData['RoleID'];
+
+        $sql = "INSERT INTO User (Username, Email, Password, Status, RoleID) VALUES (:username, :email, :password, 'Active', :roleID)";
         $stmt = $this->db->prepare($sql);
         $stmt->bindParam(':username', $username);
         $stmt->bindParam(':email', $email);
         $stmt->bindParam(':password', $hashedPassword);
+        $stmt->bindParam(':roleID', $roleID);
 
         try {
             $stmt->execute();
 
-
             $userID = $this->db->lastInsertId();
 
-            // Create a basic profile in UserProfile for the new user
             $sqlProfile = "INSERT INTO UserProfile (UserID, Bio, Gender, FirstLast) VALUES (:userID, '', '', '')";
             $stmtProfile = $this->db->prepare($sqlProfile);
             $stmtProfile->bindParam(':userID', $userID);
@@ -93,5 +113,4 @@ class Auth
             return false;
         }
     }
-
 }

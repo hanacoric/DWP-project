@@ -1,10 +1,9 @@
 <?php
-// Backend
+global $db;
 session_start();
 require_once '../src/includes/db.php';
 require_once '../src/classes/auth.php';
 
-$db = new PDO("mysql:host=localhost;port=3306;dbname=SemesterProjectDB", "hana", "123456");
 $auth = new Auth($db);
 
 $errorMessage = "";
@@ -14,7 +13,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $password = trim($_POST['password']);
 
     if ($auth->login($username, $password)) {
-        header("Location: index.php");
+        if ($auth->isAdmin()) {
+            header("Location: admin.php");
+        } else {
+            header("Location: index.php");
+        }
         exit();
     } else {
         $errorMessage = "Invalid username or password.";
@@ -33,8 +36,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 <div class="container">
     <h1>Random<span>Shot</span></h1>
     <form action="login.php" method="POST">
-        <input type="text" name="username" placeholder="Username" required>
-        <input type="password" name="password" required placeholder="Password">
+        <label>
+            <input type="text" name="username" placeholder="Username" required>
+        </label>
+        <label>
+            <input type="password" name="password" required placeholder="Password">
+        </label>
         <button type="submit" class="button">Log in</button>
     </form>
     <p>Don't have an account? <a href="signup.php">Sign up</a></p>
