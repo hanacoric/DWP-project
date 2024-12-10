@@ -26,3 +26,16 @@ document.querySelectorAll('.like-form').forEach(form => {
             });
     });
 });
+
+    function showSection(sectionId) {
+    document.querySelectorAll('.post-section').forEach(section => {
+        section.classList.remove('active-section');
+    });
+    document.querySelector(`#${sectionId}`).classList.add('active-section');
+
+    document.querySelectorAll('.tabs a').forEach(tab => {
+    tab.classList.remove('active');
+});
+    document.querySelector(`[onclick="showSection('${sectionId}')"]`).classList.add('active');
+}
+

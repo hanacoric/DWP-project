@@ -229,6 +229,38 @@ if (empty($_GET['search_user'])) {
         echo "Error searching user or fetching posts: " . $e->getMessage();
     }
 }
+
+//trending/not trending posts
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['post_id'], $_POST['action'])) {
+    $postID = intval($_POST['post_id']);
+    $action = $_POST['action'];
+
+    try {
+        if ($action === 'trending') {
+            $stmt = $db->prepare("UPDATE Post SET IsTrending = TRUE WHERE PostID = :postId");
+            $stmt->execute([':postId' => $postID]);
+        } elseif ($action === 'not_trending') {
+            $stmt = $db->prepare("UPDATE Post SET IsTrending = FALSE WHERE PostID = :postId");
+            $stmt->execute([':postId' => $postID]);
+        }
+    } catch (PDOException $e) {
+        echo "Error updating trending status: " . $e->getMessage();
+    }
+}
+
+
+//fetch trending posts
+try {
+    $sql = "SELECT Post.PostID, Post.Image, Post.Caption, Post.IsPinned, User.Username, User.Status FROM Post  JOIN User ON Post.UserID = User.UserID WHERE Post.IsTrending = TRUE ORDER BY Post.UploadDate DESC";
+    $stmt = $db->prepare($sql);
+    $stmt->execute();
+    $trendingPosts = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    echo "Error fetching trending posts: " . $e->getMessage();
+    $trendingPosts = [];
+}
+
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -249,6 +281,34 @@ if (empty($_GET['search_user'])) {
             <p class="bio"><?php echo htmlspecialchars($userProfile['Bio'] ?? ''); ?></p>
         </div>
     </div>
+
+    <div class="tabs">
+        <a href="#" class="active" onclick="showSection('posts')">POSTS</a>
+        <a href="#" onclick="showSection('trending')">TRENDING</a>
+    </div>
+
+    <div id="trending" class="post-section" style="display: none;">
+        <h3>Trending Posts</h3>
+        <div class="post-grid">
+
+            <?php if (!empty($trendingPosts)): ?>
+                <?php foreach ($trendingPosts as $post): ?>
+                    <div class="post" id="post-<?php echo $post['PostID']; ?>">
+                        <img src="<?php echo htmlspecialchars($post['Image']); ?>" alt="Post Image" width="300">
+                        <p><?php echo htmlspecialchars($post['Caption']); ?></p>
+                        <p>Posted by: <?php echo htmlspecialchars($post['Username']); ?></p>
+                        <form method="POST">
+                            <input type="hidden" name="post_id" value="<?php echo $post['PostID']; ?>">
+                            <button name="action" value="not_trending" type="submit">Mark as Not Trending</button>
+                        </form>
+                    </div>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <p>No trending posts available.</p>
+            <?php endif; ?>
+        </div>
+    </div>
+
 
     <form method="GET" class="search-form" style="display: flex; justify-content: flex-end; margin-bottom: 20px;">
         <label>
@@ -275,6 +335,11 @@ if (empty($_GET['search_user'])) {
                                 <?php else: ?>
                                     <button name="action" value="pin" type="submit">Pin</button>
                                 <?php endif; ?>
+                                <?php if (isset($post['IsTrending']) && $post['IsTrending']): ?>
+                                    <button name="action" value="not_trending" type="submit">Mark as Not Trending</button>
+                                <?php else: ?>
+                                    <button name="action" value="trending" type="submit">Mark as Trending</button>
+                                <?php endif; ?>
                             </form>
                         </div>
                     <?php endforeach; ?>
@@ -285,7 +350,12 @@ if (empty($_GET['search_user'])) {
         </section>
     <?php else: ?>
 
+
         <!--user info search results-->
+        <?php if (!empty($_GET['search_user'])): ?>
+            <a href="admin.php" class="back-to-home">Back to Home</a>
+        <?php endif; ?>
+
         <section class="search-results">
             <?php if (!empty($searchResults)): ?>
                 <h3>User Information</h3>
@@ -312,6 +382,12 @@ if (empty($_GET['search_user'])) {
                                     <?php else: ?>
                                         <button name="action" value="pin" type="submit">Pin</button>
                                     <?php endif; ?>
+                                    <?php if (isset($post['IsTrending']) && $post['IsTrending']): ?>
+                                        <button name="action" value="not_trending" type="submit">Mark as Not Trending</button>
+                                    <?php else: ?>
+                                        <button name="action" value="trending" type="submit">Mark as Trending</button>
+                                    <?php endif; ?>
+
                                 </form>
                             </div>
                         <?php endforeach; ?>

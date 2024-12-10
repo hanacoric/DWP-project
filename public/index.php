@@ -157,6 +157,18 @@ $stmt = $db->prepare($sql);
 $stmt->execute();
 $posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+
+//fetch trending posts
+try {
+    $sql = "SELECT Post.PostID, Post.Image, Post.Caption, User.Username FROM Post JOIN User ON Post.UserID = User.UserID WHERE Post.IsTrending = TRUE ORDER BY Post.UploadDate DESC";
+    $stmt = $db->prepare($sql);
+    $stmt->execute();
+    $trendingPosts = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    echo "Error fetching trending posts: " . $e->getMessage();
+    $trendingPosts = [];
+}
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -183,6 +195,57 @@ $posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
         <a href="#" class="active" onclick="showSection('posts')">POSTS</a>
         <a href="#" onclick="showSection('trending')">TRENDING</a>
     </div>
+    <div id="trending" class="post-section">
+        <h3>Trending Posts</h3>
+        <div class="post-grid">
+            <?php if (!empty($trendingPosts)): ?>
+                <?php foreach ($trendingPosts as $post): ?>
+                    <div class="post" id="post-<?php echo $post['PostID']; ?>">
+                        <img src="<?php echo htmlspecialchars($post['Image']); ?>" alt="Post Image" width="300">
+                        <p><?php echo htmlspecialchars($post['Caption']); ?></p>
+                        <p>Posted by: <?php echo htmlspecialchars($post['Username']); ?></p>
+
+                        <form method="POST">
+                            <input type="hidden" name="post_id" value="<?php echo $post['PostID']; ?>">
+                            <button name="action" value="like" type="submit">Like</button>
+                            <button name="action" value="unlike" type="submit">Unlike</button>
+                            <span class="like-count"><?php echo fetchLikeCount($db, $post['PostID']); ?> Likes</span>
+                            <a href="../src/views/likes.php?post_id=<?php echo $post['PostID']; ?>">See All Likes</a>
+                        </form>
+
+                        <form method="POST" class="comment-form">
+                            <input type="hidden" name="post_id" value="<?php echo $post['PostID']; ?>">
+                            <label>
+                                <textarea name="comment" placeholder="Write a comment..." required></textarea>
+                            </label>
+                            <button name="action" value="comment" type="submit">Post Comment</button>
+                        </form>
+
+                        <h3>Comments</h3>
+                        <ul>
+                            <?php foreach (fetchComments($db, $post['PostID'], 3) as $comment): ?>
+                                <li>
+                                    <strong><?php echo htmlspecialchars($comment['Username']); ?>:</strong>
+                                    <?php echo htmlspecialchars($comment['Comment']); ?>
+                                    <span>(<?php echo $comment['Timestamp']; ?>)</span>
+                                    <?php if ($comment['UserID'] == $userID): ?>
+                                        <form method="POST" style="display:inline;">
+                                            <input type="hidden" name="post_id" value="<?php echo $post['PostID']; ?>">
+                                            <input type="hidden" name="comment_id" value="<?php echo $comment['CommentID']; ?>">
+                                            <button name="action" value="delete_comment" type="submit">Delete</button>
+                                        </form>
+                                    <?php endif; ?>
+                                </li>
+                            <?php endforeach; ?>
+                        </ul>
+                        <a href="../src/views/comments.php?post_id=<?php echo $post['PostID']; ?>">View All Comments</a>
+                    </div>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <p>No trending posts available.</p>
+            <?php endif; ?>
+        </div>
+    </div>
 
     <section id="posts" class="post-section">
         <div class="post-grid">
@@ -203,7 +266,9 @@ $posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
                         <form method="POST" class="comment-form">
                             <input type="hidden" name="post_id" value="<?php echo $post['PostID']; ?>">
-                            <textarea name="comment" placeholder="Write a comment..." required></textarea>
+                            <label>
+                                <textarea name="comment" placeholder="Write a comment..." required></textarea>
+                            </label>
                             <button name="action" value="comment" type="submit">Post Comment</button>
                         </form>
 
