@@ -180,9 +180,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'], $_POST['pos
     }
 }
 
+//pin/unpin posts
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'], $_POST['post_id'])) {
+    $postID = intval($_POST['post_id']);
+    $action = $_POST['action'];
+
+    try {
+        if ($action === 'pin') {
+            $stmt = $db->prepare("UPDATE Post SET IsPinned = TRUE WHERE PostID = :postId");
+            $stmt->execute([':postId' => $postID]);
+        } elseif ($action === 'unpin') {
+            $stmt = $db->prepare("UPDATE Post SET IsPinned = FALSE WHERE PostID = :postId");
+            $stmt->execute([':postId' => $postID]);
+        }
+    } catch (PDOException $e) {
+        echo "Error: " . $e->getMessage();
+    }
+}
+
+
 // Fetch all posts
 try {
-    $sql = "SELECT Post.PostID, Post.Image, Post.Caption, User.Username FROM Post JOIN User ON Post.UserID = User.UserID ORDER BY Post.UploadDate DESC";
+    $sql = "SELECT Post.PostID, Post.Image, Post.Caption, Post.IsPinned, User.Username FROM Post JOIN User ON Post.UserID = User.UserID ORDER BY Post.UploadDate DESC";
     $stmt = $db->prepare($sql);
     $stmt->execute();
     $posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -208,7 +227,6 @@ try {
         <div class="profile-info">
             <h2 class="username"><?php echo htmlspecialchars($userProfile['Username']); ?></h2>
             <p class="bio"><?php echo htmlspecialchars($userProfile['Bio'] ?? ''); ?></p>
-
         </div>
     </div>
 
@@ -228,10 +246,12 @@ try {
 
                         <form method="POST">
                             <input type="hidden" name="post_id" value="<?php echo $post['PostID']; ?>">
-                            <button name="action" value="like" type="submit">Like</button>
-                            <button name="action" value="unlike" type="submit">Unlike</button>
-                            <span class="like-count"><?php echo fetchLikeCount($db, $post['PostID']); ?> Likes</span>
-                            <a href="../src/views/likes.php?post_id=<?php echo $post['PostID']; ?>">See All Likes</a>
+                            <button name="action" value="delete_post" type="submit">Delete</button>
+                            <?php if (isset($post['IsPinned']) && $post['IsPinned']): ?>
+                                <button name="action" value="unpin" type="submit">Unpin</button>
+                            <?php else: ?>
+                                <button name="action" value="pin" type="submit">Pin</button>
+                            <?php endif; ?>
                         </form>
 
                         <form method="POST" class="comment-form">
@@ -246,7 +266,7 @@ try {
                                 <li>
                                     <strong><?php echo htmlspecialchars($comment['Username']); ?>:</strong>
                                     <?php echo htmlspecialchars($comment['Comment']); ?>
-                                    <span>(<?php echo $comment['Timestamp']; ?>)</span>
+                                    <span>(<?php echo htmlspecialchars($comment['Timestamp']); ?>)</span>
                                     <?php if ($comment['UserID'] == $userID): ?>
                                         <form method="POST" style="display:inline;">
                                             <input type="hidden" name="post_id" value="<?php echo $post['PostID']; ?>">
@@ -259,13 +279,6 @@ try {
                         </ul>
                         <a href="../src/views/comments.php?post_id=<?php echo $post['PostID']; ?>">View All Comments</a>
                     </div>
-
-                    <!-- Delete Post Button -->
-                    <form method="POST">
-                        <input type="hidden" name="post_id" value="<?php echo $post['PostID']; ?>">
-                        <button name="action" value="delete_post" type="submit">Delete Post</button>
-                    </form>
-
                 <?php endforeach; ?>
             <?php else: ?>
                 <p>No posts available.</p>
@@ -277,3 +290,4 @@ try {
 <script src="assets/js/home.js"></script>
 </body>
 </html>
+

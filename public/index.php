@@ -150,6 +150,13 @@ try {
     echo "Error fetching posts: " . $e->getMessage();
     $posts = [];
 }
+
+//shows the pinned post
+$sql = "SELECT Post.PostID, Post.Image, Post.Caption, Post.IsPinned, User.Username  FROM Post JOIN User ON Post.UserID = User.UserID ORDER BY Post.IsPinned DESC, Post.UploadDate DESC";
+$stmt = $db->prepare($sql);
+$stmt->execute();
+$posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
