@@ -167,7 +167,8 @@ try {
         <img src="<?php echo isset($userProfile['ProfilePicture']) ? htmlspecialchars($userProfile['ProfilePicture']) : 'assets/images/profileicon.png'; ?>" alt="Profile Image" class="profile-image">
         <div class="profile-info">
             <h2 class="username"><?php echo htmlspecialchars($userProfile['Username']); ?></h2>
-            <p class="bio"><?php echo htmlspecialchars($userProfile['Bio']); ?></p>
+            <p class="bio"><?php echo htmlspecialchars($userProfile['Bio'] ?? ''); ?></p>
+
         </div>
     </div>
 

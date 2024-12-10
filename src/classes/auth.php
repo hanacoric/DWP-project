@@ -75,9 +75,9 @@ class Auth
             return false;
         }
 
+
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 
-        // Fetch the RoleID for the provided role
         $roleSql = "SELECT RoleID FROM Role WHERE RoleName = :roleName";
         $roleStmt = $this->db->prepare($roleSql);
         $roleStmt->bindParam(':roleName', $role);
@@ -90,6 +90,7 @@ class Auth
 
         $roleID = $roleData['RoleID'];
 
+
         $sql = "INSERT INTO User (Username, Email, Password, Status, RoleID) VALUES (:username, :email, :password, 'Active', :roleID)";
         $stmt = $this->db->prepare($sql);
         $stmt->bindParam(':username', $username);
@@ -99,7 +100,6 @@ class Auth
 
         try {
             $stmt->execute();
-
             $userID = $this->db->lastInsertId();
 
             $sqlProfile = "INSERT INTO UserProfile (UserID, Bio, Gender, FirstLast) VALUES (:userID, '', '', '')";
@@ -113,4 +113,5 @@ class Auth
             return false;
         }
     }
+
 }
