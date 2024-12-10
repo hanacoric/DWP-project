@@ -198,23 +198,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'], $_POST['pos
     }
 }
 
+// default fetch all posts
+$posts = [];
+$searchResults = [];
+if (empty($_GET['search_user'])) {
+    try {
+        $sql = "SELECT Post.PostID, Post.Image, Post.Caption, Post.IsPinned, User.Username, User.Status FROM Post  JOIN User ON Post.UserID = User.UserID ORDER BY Post.UploadDate DESC";
+        $stmt = $db->prepare($sql);
+        $stmt->execute();
+        $posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        echo "Error fetching posts: " . $e->getMessage();
+    }
+} else {
+    $searchQuery = trim($_GET['search_user']);
+    try {
+        //fetch user info
+        $stmt = $db->prepare("SELECT User.UserID, User.Username, User.Status, UserProfile.Bio FROM User  LEFT JOIN UserProfile ON User.UserID = UserProfile.UserID WHERE User.Username LIKE :search");
+        $stmt->execute([':search' => '%' . $searchQuery . '%']);
+        $searchResults = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Fetch all posts
-try {
-    $sql = "SELECT Post.PostID, Post.Image, Post.Caption, Post.IsPinned, User.Username FROM Post JOIN User ON Post.UserID = User.UserID ORDER BY Post.UploadDate DESC";
-    $stmt = $db->prepare($sql);
-    $stmt->execute();
-    $posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
-} catch (PDOException $e) {
-    echo "Error fetching posts: " . $e->getMessage();
-    $posts = [];
+        if (!empty($searchResults)) {
+            $selectedUserID = $searchResults[0]['UserID'];
+
+            $stmt = $db->prepare("SELECT Post.PostID, Post.Image, Post.Caption, Post.IsPinned FROM Post WHERE Post.UserID = :userId ORDER BY Post.UploadDate DESC");
+            $stmt->execute([':userId' => $selectedUserID]);
+            $posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        }
+    } catch (PDOException $e) {
+        echo "Error searching user or fetching posts: " . $e->getMessage();
+    }
 }
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Home - RandomShot</title>
+    <title>Admin Panel - RandomShot</title>
     <link rel="stylesheet" href="assets/css/home.css">
     <link rel="stylesheet" href="assets/css/sidebar.css">
 </head>
@@ -230,64 +250,84 @@ try {
         </div>
     </div>
 
-    <div class="tabs">
-        <a href="#" class="active" onclick="showSection('posts')">POSTS</a>
-        <a href="#" onclick="showSection('trending')">TRENDING</a>
-    </div>
+    <form method="GET" class="search-form" style="display: flex; justify-content: flex-end; margin-bottom: 20px;">
+        <label>
+            <input type="text" name="search_user" placeholder="Search for users..." value="<?php echo isset($_GET['search_user']) ? htmlspecialchars($_GET['search_user']) : ''; ?>" required>
+        </label>
+        <button type="submit">Search</button>
+    </form>
 
-    <section id="posts" class="post-section">
-        <div class="post-grid">
-            <?php if (!empty($posts)): ?>
-                <?php foreach ($posts as $post): ?>
-                    <div class="post" id="post-<?php echo $post['PostID']; ?>">
-                        <img src="<?php echo htmlspecialchars($post['Image']); ?>" alt="Post Image" width="300">
-                        <p><?php echo htmlspecialchars($post['Caption']); ?></p>
-                        <p>Posted by: <?php echo htmlspecialchars($post['Username']); ?></p>
+    <?php if (empty($_GET['search_user'])): ?>
+        <section id="posts" class="post-section">
+            <h3>All Posts</h3>
+            <div class="post-grid">
+                <?php if (!empty($posts)): ?>
+                    <?php foreach ($posts as $post): ?>
+                        <div class="post" id="post-<?php echo $post['PostID']; ?>">
+                            <img src="<?php echo htmlspecialchars($post['Image']); ?>" alt="Post Image" width="300">
+                            <p><?php echo htmlspecialchars($post['Caption']); ?></p>
+                            <p>Posted by: <?php echo htmlspecialchars($post['Username']); ?> (<?php echo htmlspecialchars($post['Status']); ?>)</p>
+                            <form method="POST">
+                                <input type="hidden" name="post_id" value="<?php echo $post['PostID']; ?>">
+                                <button name="action" value="delete_post" type="submit">Delete</button>
+                                <?php if (isset($post['IsPinned']) && $post['IsPinned']): ?>
+                                    <button name="action" value="unpin" type="submit">Unpin</button>
+                                <?php else: ?>
+                                    <button name="action" value="pin" type="submit">Pin</button>
+                                <?php endif; ?>
+                            </form>
+                        </div>
+                    <?php endforeach; ?>
+                <?php else: ?>
+                    <p>No posts available.</p>
+                <?php endif; ?>
+            </div>
+        </section>
+    <?php else: ?>
 
-                        <form method="POST">
-                            <input type="hidden" name="post_id" value="<?php echo $post['PostID']; ?>">
-                            <button name="action" value="delete_post" type="submit">Delete</button>
-                            <?php if (isset($post['IsPinned']) && $post['IsPinned']): ?>
-                                <button name="action" value="unpin" type="submit">Unpin</button>
-                            <?php else: ?>
-                                <button name="action" value="pin" type="submit">Pin</button>
-                            <?php endif; ?>
-                        </form>
-
-                        <form method="POST" class="comment-form">
-                            <input type="hidden" name="post_id" value="<?php echo $post['PostID']; ?>">
-                            <textarea name="comment" placeholder="Write a comment..." required></textarea>
-                            <button name="action" value="comment" type="submit">Post Comment</button>
-                        </form>
-
-                        <h3>Comments</h3>
-                        <ul>
-                            <?php foreach (fetchComments($db, $post['PostID'], 3) as $comment): ?>
-                                <li>
-                                    <strong><?php echo htmlspecialchars($comment['Username']); ?>:</strong>
-                                    <?php echo htmlspecialchars($comment['Comment']); ?>
-                                    <span>(<?php echo htmlspecialchars($comment['Timestamp']); ?>)</span>
-                                    <?php if ($comment['UserID'] == $userID): ?>
-                                        <form method="POST" style="display:inline;">
-                                            <input type="hidden" name="post_id" value="<?php echo $post['PostID']; ?>">
-                                            <input type="hidden" name="comment_id" value="<?php echo $comment['CommentID']; ?>">
-                                            <button name="action" value="delete_comment" type="submit">Delete</button>
-                                        </form>
-                                    <?php endif; ?>
-                                </li>
-                            <?php endforeach; ?>
-                        </ul>
-                        <a href="../src/views/comments.php?post_id=<?php echo $post['PostID']; ?>">View All Comments</a>
+        <!--user info search results-->
+        <section class="search-results">
+            <?php if (!empty($searchResults)): ?>
+                <h3>User Information</h3>
+                <?php foreach ($searchResults as $result): ?>
+                    <div class="user-result">
+                        <h4>Username: <?php echo htmlspecialchars($result['Username']); ?></h4>
+                        <p>Status: <?php echo htmlspecialchars($result['Status']); ?></p>
+                        <p>Bio: <?php echo htmlspecialchars($result['Bio']); ?></p>
                     </div>
                 <?php endforeach; ?>
+
+                <h3>Posts by <?php echo htmlspecialchars($searchResults[0]['Username']); ?></h3>
+                <div class="post-grid">
+                    <?php if (!empty($posts)): ?>
+                        <?php foreach ($posts as $post): ?>
+                            <div class="post" id="post-<?php echo $post['PostID']; ?>">
+                                <img src="<?php echo htmlspecialchars($post['Image']); ?>" alt="Post Image" width="300">
+                                <p><?php echo htmlspecialchars($post['Caption']); ?></p>
+                                <form method="POST">
+                                    <input type="hidden" name="post_id" value="<?php echo $post['PostID']; ?>">
+                                    <button name="action" value="delete_post" type="submit">Delete</button>
+                                    <?php if (isset($post['IsPinned']) && $post['IsPinned']): ?>
+                                        <button name="action" value="unpin" type="submit">Unpin</button>
+                                    <?php else: ?>
+                                        <button name="action" value="pin" type="submit">Pin</button>
+                                    <?php endif; ?>
+                                </form>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <p>No posts available for this user.</p>
+                    <?php endif; ?>
+                </div>
             <?php else: ?>
-                <p>No posts available.</p>
+                <p>No users found for "<?php echo htmlspecialchars($searchQuery); ?>".</p>
             <?php endif; ?>
-        </div>
-    </section>
+        </section>
+    <?php endif; ?>
 </div>
 
 <script src="assets/js/home.js"></script>
 </body>
 </html>
+
 
