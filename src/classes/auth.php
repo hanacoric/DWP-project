@@ -38,14 +38,7 @@ class Auth
         return isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true;
     }
 
-    // Check if user is an admin
-    public function isAdmin()
-    {
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
-        return isset($_SESSION['role']) && $_SESSION['role'] === 'Admin';
-    }
+
 
     // Logout method
     public function logout()
@@ -113,5 +106,14 @@ class Auth
             return false;
         }
     }
+
+    public function isAdmin()
+    {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+        return isset($_SESSION['role']) && $_SESSION['role'] === 'Admin';
+    }
+
 
 }

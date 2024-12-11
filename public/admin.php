@@ -6,6 +6,13 @@ require_once '../src/includes/db.php';
 require_once '../src/classes/user.php';
 require_once '../src/classes/post.php';
 require_once '../src/classes/notification.php';
+require_once '../src/classes/auth.php';
+$auth = new Auth($db);
+
+if (!$auth->isAdmin()) {
+    header("Location: index.php");
+    exit();
+}
 
 if (!isset($_SESSION['user_id'])) {
     header("Location: login.php");

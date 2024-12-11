@@ -4,14 +4,16 @@ session_start();
 require_once '../src/includes/db.php';
 require_once '../src/classes/auth.php';
 
+
 $auth = new Auth($db);
 
 $errorMessage = "";
 
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = trim($_POST['username']);
     $password = trim($_POST['password']);
 
+    // Attempt login
     if ($auth->login($username, $password)) {
         if ($auth->isAdmin()) {
             header("Location: admin.php");
@@ -23,6 +25,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $errorMessage = "Invalid username or password.";
     }
 }
+
 ?>
 
 <!DOCTYPE html>

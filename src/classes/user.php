@@ -267,5 +267,4 @@ public function updateProfilePicture($userID, $profilePicturePath) {
         }
     }
 
-
 }
