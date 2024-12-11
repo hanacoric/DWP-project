@@ -3,6 +3,9 @@ global $db;
 session_start();
 require_once '../includes/db.php';
 require_once '../classes/notification.php';
+require_once '../classes/user.php';
+$userObj = new User($db);
+
 
 if (!isset($_SESSION['user_id'])) {
     header("Location: login.php");
@@ -18,6 +21,11 @@ try {
     echo "Error fetching notifications: " . $e->getMessage();
     $notifications = [];
 }
+if (!$userObj->isUserActive($_SESSION['user_id'])) {
+    echo "You are blocked and cannot post.";
+    exit();
+}
+
 
 ?>
 <!DOCTYPE html>

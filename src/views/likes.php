@@ -2,6 +2,8 @@
 global $db;
 session_start();
 require_once '../includes/db.php';
+require_once '../classes/user.php';
+$userObj = new User($db);
 
 if (!isset($_SESSION['user_id'])) {
     header("Location: login.php");
@@ -19,6 +21,12 @@ try {
     echo "Error fetching likes: " . $e->getMessage();
     $likes = [];
 }
+
+if (!$userObj->isUserActive($_SESSION['user_id'])) {
+    echo "You are blocked and cannot like posts.";
+    exit();
+}
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -41,4 +49,4 @@ try {
 <a href="../../../DWP/public/index.php">Back to Home</a>
 </body>
 </html>
-s
+

@@ -1,5 +1,9 @@
 <?php
+global $db;
 require_once '../includes/db.php';
+require_once '../classes/user.php';
+require_once '../classes/user.php';
+$userObj = new User($db);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Path to store uploaded image
@@ -25,4 +29,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         echo "Error uploading file.";
     }
 }
+
+if (!$userObj->isUserActive($_SESSION['user_id'])) {
+    echo "You are blocked and cannot post.";
+    exit();
+}
+
 

@@ -1,6 +1,9 @@
 <?php
 global $db;
 require_once '../includes/db.php';
+require_once '../classes/notification.php';
+require_once '../classes/user.php';
+$userObj = new User($db);
 session_start();
 
 if (!isset($_SESSION['user_id'])) {
@@ -14,6 +17,10 @@ $postID = intval($_GET['post_id']);
 $stmt = $db->prepare("SELECT Comments.CommentID, Comments.Comment, Comments.Timestamp, User.Username, Comments.UserID FROM Comments JOIN User ON Comments.UserID = User.UserID WHERE Comments.PostID = :postId ORDER BY Comments.Timestamp ASC");
 $stmt->execute(['postId' => $postID]);
 $comments = $stmt->fetchAll(PDO::FETCH_ASSOC);
+if (!$userObj->isUserActive($_SESSION['user_id'])) {
+    echo "You are blocked and cannot post.";
+    exit();
+}
 ?>
 
 <!DOCTYPE html>

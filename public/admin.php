@@ -260,6 +260,25 @@ try {
     $trendingPosts = [];
 }
 
+ //block/unblock/delete users
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['user_id'], $_POST['action'])) {
+    $userID = intval($_POST['user_id']);
+    $action = $_POST['action'];
+
+    if ($action === 'block') {
+        if ($userObj->blockUser($userID)) {
+            echo "User blocked successfully.";
+        }
+    } elseif ($action === 'unblock') {
+        if ($userObj->unblockUser($userID)) {
+            echo "User unblocked successfully.";
+        }
+    } elseif ($action === 'delete') {
+        if ($userObj->deleteUserPermanently($userID)) {
+            echo "User deleted successfully.";
+        }
+    }
+}
 
 ?>
 <!DOCTYPE html>
@@ -364,6 +383,17 @@ try {
                         <h4>Username: <?php echo htmlspecialchars($result['Username']); ?></h4>
                         <p>Status: <?php echo htmlspecialchars($result['Status']); ?></p>
                         <p>Bio: <?php echo htmlspecialchars($result['Bio']); ?></p>
+                        <input type="hidden" name="user_id" value="<?php echo $result['UserID']; ?>">
+                        <form method="POST">
+                            <input type="hidden" name="user_id" value="<?php echo $result['UserID']; ?>">
+                            <?php if ($result['Status'] === 'Active'): ?>
+                                <button name="action" value="block" type="submit">Block</button>
+                            <?php else: ?>
+                                <button name="action" value="unblock" type="submit">Unblock</button>
+                            <?php endif; ?>
+                            <button name="action" value="delete" type="submit" onclick="return confirm('Are you sure you want to delete this user?');">Delete</button>
+                        </form>
+
                     </div>
                 <?php endforeach; ?>
 
@@ -387,7 +417,6 @@ try {
                                     <?php else: ?>
                                         <button name="action" value="trending" type="submit">Mark as Trending</button>
                                     <?php endif; ?>
-
                                 </form>
                             </div>
                         <?php endforeach; ?>

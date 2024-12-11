@@ -169,6 +169,16 @@ try {
     $trendingPosts = [];
 }
 
+//fetch user status
+$stmt = $db->prepare("SELECT Status FROM User WHERE UserID = :userID");
+$stmt->execute([':userID' => $_SESSION['user_id']]);
+$userStatus = $stmt->fetch(PDO::FETCH_ASSOC)['Status'] ?? null;
+
+if ($userStatus !== 'Active') {
+    echo "Your account is blocked.";
+    exit();
+}
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -257,19 +267,27 @@ try {
                         <p>Posted by: <?php echo htmlspecialchars($post['Username']); ?></p>
 
                         <form method="POST">
+                            <?php if ($userStatus !== 'Active'): ?>
+                                <p>Your account is blocked. You cannot like,comment, or post.</p>
+                            <?php else: ?>
                             <input type="hidden" name="post_id" value="<?php echo $post['PostID']; ?>">
                             <button name="action" value="like" type="submit">Like</button>
                             <button name="action" value="unlike" type="submit">Unlike</button>
                             <span class="like-count"><?php echo fetchLikeCount($db, $post['PostID']); ?> Likes</span>
                             <a href="../src/views/likes.php?post_id=<?php echo $post['PostID']; ?>">See All Likes</a>
+                            <?php endif; ?>
                         </form>
 
                         <form method="POST" class="comment-form">
+                            <?php if ($userStatus !== 'Active'): ?>
+                                <p>Your account is blocked. You cannot like,comment, or post.</p>
+                            <?php else: ?>
                             <input type="hidden" name="post_id" value="<?php echo $post['PostID']; ?>">
                             <label>
                                 <textarea name="comment" placeholder="Write a comment..." required></textarea>
                             </label>
                             <button name="action" value="comment" type="submit">Post Comment</button>
+                            <?php endif; ?>
                         </form>
 
                         <h3>Comments</h3>

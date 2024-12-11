@@ -141,9 +141,9 @@ class User {
         }
     }
 
-    // DELETE (soft delete user)
-    public function deleteUser($userID) {
-        $sql = "UPDATE User SET Status = 'Blocked' WHERE UserID = :userID";
+    // DELETE (delete user)
+    public function deleteUserPermanently($userID) {
+        $sql = "DELETE FROM User WHERE UserID = :userID";
         $stmt = $this->db->prepare($sql);
         $stmt->bindParam(':userID', $userID);
 
@@ -151,7 +151,7 @@ class User {
             $stmt->execute();
             return true;
         } catch (PDOException $e) {
-            echo "Error blocking user: " . $e->getMessage();
+            echo "Error deleting user: " . $e->getMessage();
             return false;
         }
     }
@@ -217,6 +217,53 @@ public function updateProfilePicture($userID, $profilePicturePath) {
                 echo "Error updating profile information: " . $e->getMessage();
                 return false;
             }
+        }
+    }
+
+    // Block a user
+    public function blockUser($userID) {
+        $sql = "UPDATE User SET Status = 'Blocked' WHERE UserID = :userID";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindParam(':userID', $userID);
+
+        try {
+            $stmt->execute();
+            return true;
+        } catch (PDOException $e) {
+            echo "Error banning user: " . $e->getMessage();
+            return false;
+        }
+    }
+
+// Unblock a user
+    public function unblockUser($userID) {
+        $sql = "UPDATE User SET Status = 'Active' WHERE UserID = :userID";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindParam(':userID', $userID);
+
+        try {
+            $stmt->execute();
+            return true;
+        } catch (PDOException $e) {
+            echo "Error unblocking user: " . $e->getMessage();
+            return false;
+        }
+    }
+
+
+    //checks user status
+    public function isUserActive($userID) {
+        $sql = "SELECT Status FROM User WHERE UserID = :userID";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindParam(':userID', $userID);
+
+        try {
+            $stmt->execute();
+            $status = $stmt->fetch(PDO::FETCH_ASSOC)['Status'] ?? null;
+            return $status === 'Active';
+        } catch (PDOException $e) {
+            echo "Error checking user status: " . $e->getMessage();
+            return false;
         }
     }
 
