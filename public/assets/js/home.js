@@ -1,12 +1,21 @@
 function showSection(sectionId) {
-    document.getElementById('posts').style.display = 'none';
-    document.getElementById('trending').style.display = 'none';
+    document.getElementById('posts').style.display = sectionId === 'posts' ? 'block' : 'none';
+    document.getElementById('trending').style.display = sectionId === 'trending' ? 'block' : 'none';
 
-    document.querySelectorAll('.tabs a').forEach(tab => tab.classList.remove('active'));
+    document.querySelectorAll('.tabs a').forEach(tab => {
+        tab.classList.remove('active');
+    });
 
-    document.getElementById(sectionId).style.display = 'block';
-    document.querySelector('.tabs a[onclick="showSection(\'' + sectionId + '\')"]').classList.add('active');
+    const activeTab = document.querySelector(`.tabs a[onclick="showSection('${sectionId}')"]`);
+    if (activeTab) {
+        activeTab.classList.add('active');
+    }
 }
+
+// Ensure the default section is "Posts"
+document.addEventListener('DOMContentLoaded', () => {
+    showSection('posts'); // Set default to "Posts"
+});
 
 document.querySelectorAll('.like-form').forEach(form => {
     form.addEventListener('submit', function (e) {
@@ -26,16 +35,3 @@ document.querySelectorAll('.like-form').forEach(form => {
             });
     });
 });
-
-    function showSection(sectionId) {
-    document.querySelectorAll('.post-section').forEach(section => {
-        section.classList.remove('active-section');
-    });
-    document.querySelector(`#${sectionId}`).classList.add('active-section');
-
-    document.querySelectorAll('.tabs a').forEach(tab => {
-    tab.classList.remove('active');
-});
-    document.querySelector(`[onclick="showSection('${sectionId}')"]`).classList.add('active');
-}
-
