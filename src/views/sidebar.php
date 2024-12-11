@@ -43,6 +43,9 @@ $homeURL = ($userRole === 'Admin') ? 'admin.php' : 'index.php';
         <a href="../../../DWP/src/views/comments_notifications.php" class="comments-icon"><i class="fas fa-comment "></i> Comments</a>
         <a href="../../../DWP/src/views/settings.php" class="settings-icon"><i class="fas fa-cog "></i> Settings</a>
     </nav>
+    <form method="POST" action="../../../DWP/public/logout.php" class="logout-form">
+        <button type="submit" class="logout-button">Logout</button>
+    </form>
 </div>
 </body>
 </html>

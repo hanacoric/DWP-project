@@ -297,7 +297,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['user_id'], $_POST['ac
     <link rel="stylesheet" href="assets/css/sidebar.css">
 </head>
 <body>
-<?php include '../src/views/sidebar.php'; ?>
+<div class="admin-header">
+    <form method="POST" action="logout.php" class="logout-form">
+        <button type="submit" class="logout-button">Logout</button>
+    </form>
+</div>
 
 <div class="main-content">
     <div class="profile-section">
