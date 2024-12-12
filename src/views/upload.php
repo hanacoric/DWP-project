@@ -8,15 +8,6 @@ if (!isset($_SESSION['user_id'])) {
     exit();
 }
 
-global $db;
-require_once '../includes/db.php';
-session_start();
-
-if (!isset($_SESSION['user_id'])) {
-    header("Location: /DWP/public/login.php");
-    exit();
-}
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $caption = htmlspecialchars($_POST['caption'] ?? '', ENT_QUOTES, 'UTF-8');
     $userId = $_SESSION['user_id'];
@@ -97,10 +88,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <input type="file" name="image_file" id="image_file" accept="image/*" required>
 
         <label for="caption">Caption:</label>
-        <textarea name="caption" id="caption" rows="3" placeholder="Write your caption..."></textarea>
+        <textarea name="caption" id="caption" rows="3" placeholder="Write your caption..." maxlength="100" required></textarea>
+        <small id="charCount">0 / 100</small>
 
         <button type="submit">Share Post</button>
     </form>
 </div>
+
+<script src="../../../DWP/public/assets/js/upload.js"></script>
 </body>
 </html>
