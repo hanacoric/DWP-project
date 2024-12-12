@@ -24,6 +24,24 @@ $userObj = new User($db);
 $notificationObj = new Notification($db);
 $userProfile = $userObj->getUserProfile($userID);
 
+//fetch trending posts
+try {
+    $sql = "SELECT Post.PostID, Post.Image, Post.BlobImage, Post.Caption, Post.IsPinned, Post.IsTrending, User.Username FROM Post  JOIN User ON Post.UserID = User.UserID WHERE Post.IsTrending = TRUE ORDER BY Post.UploadDate DESC";
+    $stmt = $db->prepare($sql);
+    $stmt->execute();
+    $trendingPosts = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+//convert blob to base64
+    foreach ($trendingPosts as &$post) {
+        if (!empty($post['Image'])) {
+            $post['Image'] = 'data:image/jpeg;base64,' . base64_encode($post['Image']);
+        }
+    }
+} catch (PDOException $e) {
+    echo "Error fetching trending posts: " . $e->getMessage();
+    $trendingPosts = [];
+}
+
 //ADMIN STUFF
 
 $userID = $_SESSION['user_id'];
@@ -51,6 +69,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'], $_POST['pos
             case 'pin':
                 $query = "UPDATE Post SET IsPinned = TRUE WHERE PostID = :postId";
                 break;
+
             case 'unpin':
                 $query = "UPDATE Post SET IsPinned = FALSE WHERE PostID = :postId";
                 break;
@@ -76,7 +95,7 @@ $posts = [];
 $searchResults = [];
 if (empty($_GET['search_user'])) {
     try {
-        $sql = "SELECT Post.PostID, Post.Image, Post.Caption, Post.IsPinned, Post.IsTrending, User.Username, User.Status FROM Post  JOIN User ON Post.UserID = User.UserID ORDER BY Post.UploadDate DESC";
+        $sql = "SELECT Post.PostID, Post.Image, Post.BlobImage, Post.Caption, Post.IsPinned, Post.IsTrending, User.Username, User.Status FROM Post  JOIN User ON Post.UserID = User.UserID ORDER BY Post.UploadDate DESC";
         $stmt = $db->prepare($sql);
         $stmt->execute();
         $posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -86,7 +105,6 @@ if (empty($_GET['search_user'])) {
 } else {
     $searchQuery = trim($_GET['search_user']);
     try {
-        //fetch user info
         $stmt = $db->prepare("SELECT User.UserID, User.Username, User.Status, UserProfile.Bio FROM User  LEFT JOIN UserProfile ON User.UserID = UserProfile.UserID WHERE User.Username LIKE :search");
         $stmt->execute([':search' => '%' . $searchQuery . '%']);
         $searchResults = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -94,7 +112,7 @@ if (empty($_GET['search_user'])) {
         if (!empty($searchResults)) {
             $selectedUserID = $searchResults[0]['UserID'];
 
-            $stmt = $db->prepare("SELECT Post.PostID, Post.Image, Post.Caption, Post.IsPinned FROM Post WHERE Post.UserID = :userId ORDER BY Post.UploadDate DESC");
+            $stmt = $db->prepare("SELECT Post.PostID, Post.Image, Post.BlobImage, Post.Caption, Post.IsPinned FROM Post WHERE Post.UserID = :userId ORDER BY Post.UploadDate DESC");
             $stmt->execute([':userId' => $selectedUserID]);
             $posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
         }
@@ -105,7 +123,7 @@ if (empty($_GET['search_user'])) {
 
 //fetch trending posts
 try {
-    $sql = "SELECT Post.PostID, Post.Image, Post.Caption, Post.IsPinned, Post.IsTrending, User.Username, User.Status  FROM Post JOIN User ON Post.UserID = User.UserID WHERE Post.IsTrending = TRUE  ORDER BY Post.UploadDate DESC";
+    $sql = "SELECT Post.PostID, Post.Image, Post.BlobImage, Post.Caption, Post.IsPinned, Post.IsTrending, User.Username, User.Status  FROM Post JOIN User ON Post.UserID = User.UserID WHERE Post.IsTrending = TRUE  ORDER BY Post.UploadDate DESC";
     $stmt = $db->prepare($sql);
     $stmt->execute();
     $trendingPosts = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -176,7 +194,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['user_id'], $_POST['ac
             <?php if (!empty($trendingPosts)): ?>
                 <?php foreach ($trendingPosts as $post): ?>
                     <div class="post" id="post-<?php echo $post['PostID']; ?>">
-                        <img src="<?php echo htmlspecialchars($post['Image']); ?>" alt="Post Image" width="300">
+                        <?php if (!empty($post['BlobImage'])): ?>
+                            <!-- Display image from BlobImage column -->
+                            <img src="data:image/jpeg;base64,<?php echo base64_encode($post['BlobImage']); ?>" alt="Post Image" width="300">
+                        <?php elseif (!empty($post['Image'])): ?>
+                            <img src="<?php echo htmlspecialchars($post['Image']); ?>" alt="Post Image" width="300">
+                        <?php else: ?>
+                            <img src="assets/images/default-placeholder.png" alt="Default Post Image" width="300">
+                        <?php endif; ?>
                         <p><?php echo htmlspecialchars($post['Caption']); ?></p>
                         <p>Posted by: <?php echo htmlspecialchars($post['Username']); ?></p>
                         <form method="POST">
@@ -206,7 +231,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['user_id'], $_POST['ac
                 <?php if (!empty($posts)): ?>
                     <?php foreach ($posts as $post): ?>
                         <div class="post" id="post-<?php echo $post['PostID']; ?>">
-                            <img src="<?php echo htmlspecialchars($post['Image']); ?>" alt="Post Image" width="300">
+                            <?php if (!empty($post['BlobImage'])): ?>
+                                <!-- converts blob to base64 and displays it -->
+                                <img src="data:image/jpeg;base64,<?php echo base64_encode($post['BlobImage']); ?>" alt="Post Image" width="300">
+                            <?php endif; ?>
                             <p><?php echo htmlspecialchars($post['Caption']); ?></p>
                             <p>Posted by: <?php echo htmlspecialchars($post['Username']); ?> (<?php echo htmlspecialchars($post['Status']); ?>)</p>
                             <form method="POST">
@@ -228,7 +256,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['user_id'], $_POST['ac
     <?php else: ?>
 
 
-        <!--user info search results-->
         <?php if (!empty($_GET['search_user'])): ?>
             <a href="admin.php" class="back-to-home">Back to Home</a>
         <?php endif; ?>

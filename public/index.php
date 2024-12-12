@@ -150,7 +150,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['post_id'], $_POST['ac
     }
 }
 try {
-    $sql = "SELECT Post.PostID, Post.Image, Post.Caption, User.Username FROM Post JOIN User ON Post.UserID = User.UserID ORDER BY Post.UploadDate DESC";
+    $sql = "SELECT Post.PostID, Post.Image, Post.BlobImage, Post.Caption, User.Username FROM Post JOIN User ON Post.UserID = User.UserID ORDER BY Post.UploadDate DESC";
     $stmt = $db->prepare($sql);
     $stmt->execute();
     $posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -160,7 +160,14 @@ try {
 }
 
 //shows the pinned post
-$sql = "SELECT Post.PostID, Post.Image, Post.Caption, Post.IsPinned, User.Username  FROM Post JOIN User ON Post.UserID = User.UserID ORDER BY Post.IsPinned DESC, Post.UploadDate DESC";
+$sql = "SELECT Post.PostID, Post.Image, Post.BlobImage, Post.Caption, Post.IsPinned, User.Username FROM Post JOIN User ON Post.UserID = User.UserID ORDER BY Post.IsPinned DESC, Post.UploadDate DESC";
+$stmt = $db->prepare($sql);
+$stmt->execute();
+$posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+
+//fetch all posts
+$sql = "SELECT Post.PostID, Post.Image, Post.BlobImage, Post.Caption, Post.IsPinned, User.Username FROM Post JOIN User ON Post.UserID = User.UserID  ORDER BY Post.IsPinned DESC, Post.UploadDate DESC";
 $stmt = $db->prepare($sql);
 $stmt->execute();
 $posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -168,14 +175,21 @@ $posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 //fetch trending posts
 try {
-    $sql = "SELECT Post.PostID, Post.Image, Post.Caption, User.Username FROM Post JOIN User ON Post.UserID = User.UserID WHERE Post.IsTrending = TRUE ORDER BY Post.UploadDate DESC";
+    $sql = "SELECT Post.PostID, Post.Image, Post.BlobImage, Post.Caption, Post.IsPinned, Post.IsTrending, User.Username FROM Post JOIN User ON Post.UserID = User.UserID WHERE Post.IsTrending = TRUE ORDER BY Post.UploadDate DESC";
     $stmt = $db->prepare($sql);
     $stmt->execute();
     $trendingPosts = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    foreach ($trendingPosts as &$post) {
+        if (!empty($post['Image'])) {
+            $post['Image'] = 'data:image/jpeg;base64,' . base64_encode($post['Image']);
+        }
+    }
 } catch (PDOException $e) {
     echo "Error fetching trending posts: " . $e->getMessage();
     $trendingPosts = [];
 }
+
 
 //fetch user status
 $stmt = $db->prepare("SELECT Status FROM User WHERE UserID = :userID");
@@ -186,7 +200,6 @@ if ($userStatus !== 'Active') {
     echo "Your account is blocked.";
     exit();
 }
-
 
 ?>
 <!DOCTYPE html>
@@ -220,7 +233,16 @@ if ($userStatus !== 'Active') {
             <?php if (!empty($trendingPosts)): ?>
                 <?php foreach ($trendingPosts as $post): ?>
                     <div class="post" id="post-<?php echo $post['PostID']; ?>">
-                        <img src="<?php echo htmlspecialchars($post['Image']); ?>" alt="Post Image" width="300">
+                        <?php if (!empty($post['BlobImage'])): ?>
+                            <!-- Display image from BlobImage column -->
+                            <img src="data:image/jpeg;base64,<?php echo base64_encode($post['BlobImage']); ?>" alt="Post Image" width="300">
+                        <?php elseif (!empty($post['Image'])): ?>
+                            <!-- Display image from Image column (URL-based) -->
+                            <img src="<?php echo htmlspecialchars($post['Image']); ?>" alt="Post Image" width="300">
+                        <?php else: ?>
+                            <!-- Default placeholder image -->
+                            <img src="assets/images/default-placeholder.png" alt="Default Post Image" width="300">
+                        <?php endif; ?>
                         <p><?php echo htmlspecialchars($post['Caption']); ?></p>
                         <p>Posted by: <?php echo htmlspecialchars($post['Username']); ?></p>
 
@@ -271,31 +293,35 @@ if ($userStatus !== 'Active') {
             <?php if (!empty($posts)): ?>
                 <?php foreach ($posts as $post): ?>
                     <div class="post" id="post-<?php echo $post['PostID']; ?>">
-                        <img src="<?php echo htmlspecialchars($post['Image']); ?>" alt="Post Image" width="300">
+                        <?php if (!empty($post['BlobImage'])): ?>
+                            <!-- converts blob to base64 and displays it -->
+                            <img src="data:image/jpeg;base64,<?php echo base64_encode($post['BlobImage']); ?>" alt="Post Image" width="300">
+                        <?php endif; ?>
+
                         <p><?php echo htmlspecialchars($post['Caption']); ?></p>
                         <p>Posted by: <?php echo htmlspecialchars($post['Username']); ?></p>
 
                         <form method="POST">
                             <?php if ($userStatus !== 'Active'): ?>
-                                <p>Your account is blocked. You cannot like,comment, or post.</p>
+                                <p>Your account is blocked. You cannot like, comment, or post.</p>
                             <?php else: ?>
-                            <input type="hidden" name="post_id" value="<?php echo $post['PostID']; ?>">
-                            <button name="action" value="like" type="submit">Like</button>
-                            <button name="action" value="unlike" type="submit">Unlike</button>
-                            <span class="like-count"><?php echo fetchLikeCount($db, $post['PostID']); ?> Likes</span>
-                            <a href="../src/views/likes.php?post_id=<?php echo $post['PostID']; ?>">See All Likes</a>
+                                <input type="hidden" name="post_id" value="<?php echo $post['PostID']; ?>">
+                                <button name="action" value="like" type="submit">Like</button>
+                                <button name="action" value="unlike" type="submit">Unlike</button>
+                                <span class="like-count"><?php echo fetchLikeCount($db, $post['PostID']); ?> Likes</span>
+                                <a href="../src/views/likes.php?post_id=<?php echo $post['PostID']; ?>">See All Likes</a>
                             <?php endif; ?>
                         </form>
 
                         <form method="POST" class="comment-form">
                             <?php if ($userStatus !== 'Active'): ?>
-                                <p>Your account is blocked. You cannot like,comment, or post.</p>
+                                <p>Your account is blocked. You cannot like, comment, or post.</p>
                             <?php else: ?>
-                            <input type="hidden" name="post_id" value="<?php echo $post['PostID']; ?>">
-                            <label>
-                                <textarea name="comment" placeholder="Write a comment..." required></textarea>
-                            </label>
-                            <button name="action" value="comment" type="submit">Post Comment</button>
+                                <input type="hidden" name="post_id" value="<?php echo $post['PostID']; ?>">
+                                <label>
+                                    <textarea name="comment" placeholder="Write a comment..." required></textarea>
+                                </label>
+                                <button name="action" value="comment" type="submit">Post Comment</button>
                             <?php endif; ?>
                         </form>
 
@@ -318,15 +344,15 @@ if ($userStatus !== 'Active') {
                         </ul>
                         <a href="../src/views/comments.php?post_id=<?php echo $post['PostID']; ?>">View All Comments</a>
                     </div>
-
                 <?php endforeach; ?>
             <?php else: ?>
                 <p>No posts available.</p>
             <?php endif; ?>
         </div>
     </section>
-</div>
 
-<script src="assets/js/home.js"></script>
+
+
+    <script src="assets/js/home.js"></script>
 </body>
 </html>
