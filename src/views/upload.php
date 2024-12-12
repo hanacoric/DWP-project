@@ -8,12 +8,55 @@ if (!isset($_SESSION['user_id'])) {
     exit();
 }
 
+global $db;
+require_once '../includes/db.php';
+session_start();
+
+if (!isset($_SESSION['user_id'])) {
+    header("Location: /DWP/public/login.php");
+    exit();
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $caption = htmlspecialchars($_POST['caption']);
+    $caption = htmlspecialchars($_POST['caption'] ?? '', ENT_QUOTES, 'UTF-8');
     $userId = $_SESSION['user_id'];
 
     if (isset($_FILES['image_file']) && $_FILES['image_file']['error'] === UPLOAD_ERR_OK) {
-        $imageData = file_get_contents($_FILES['image_file']['tmp_name']);
+        $file = $_FILES['image_file'];
+        $maxFileSize = 5242880; // 5MB
+        $minFileSize = 10240;   // 10KB
+        $allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
+
+        if ($file['size'] < $minFileSize) {
+            echo "Error: The uploaded file is too small. Minimum size is 10KB.";
+            exit();
+        }
+        if ($file['size'] > $maxFileSize) {
+            echo "Error: The uploaded file is too large. Maximum size is 5MB.";
+            exit();
+        }
+
+        if (!in_array($file['type'], $allowedTypes)) {
+            echo "Error: Only JPG, PNG, and GIF formats are allowed.";
+            exit();
+        }
+
+        $imageInfo = getimagesize($file['tmp_name']);
+        if ($imageInfo === false) {
+            echo "Error: The uploaded file is not a valid image.";
+            exit();
+        }
+        list($width, $height) = $imageInfo;
+        if ($width > 1080 || $height > 1080) {
+            echo "Error: Image dimensions are too big. Maximum size is 1080x1080 pixels.";
+            exit();
+        }
+        if ($width < 100 || $height < 100) {
+            echo "Error: Image dimensions are too small. Minimum size is 100x100 pixels.";
+            exit();
+        }
+
+        $imageData = file_get_contents($file['tmp_name']);
 
         try {
             $sql = "INSERT INTO Post (BlobImage, Caption, UploadDate, UserID) VALUES (:blobImage, :caption, NOW(), :userID)";
@@ -36,6 +79,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
