@@ -287,7 +287,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['user_id'], $_POST['ac
                     <?php if (!empty($posts)): ?>
                         <?php foreach ($posts as $post): ?>
                             <div class="post" id="post-<?php echo $post['PostID']; ?>">
-                                <img src="<?php echo htmlspecialchars($post['Image']); ?>" alt="Post Image" width="300">
+                                <?php if (!empty($post['BlobImage'])): ?>
+                                    <!-- converts blob to base64 and displays it -->
+                                    <img src="data:image/jpeg;base64,<?php echo base64_encode($post['BlobImage']); ?>" alt="Post Image" width="300">
+                                <?php endif; ?>
                                 <p><?php echo htmlspecialchars($post['Caption']); ?></p>
                                 <form method="POST">
                                     <input type="hidden" name="post_id" value="<?php echo $post['PostID']; ?>">
