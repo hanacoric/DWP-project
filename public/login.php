@@ -1,9 +1,33 @@
 <?php
 global $db;
-session_start();
 require_once '../src/includes/db.php';
 require_once '../src/classes/auth.php';
 
+// Load environment variables from .env
+function loadEnv($filePath = __DIR__ . '/../.env') {
+    if (!file_exists($filePath)) {
+        throw new Exception("Environment file not found: $filePath");
+    }
+
+    $lines = file($filePath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    foreach ($lines as $line) {
+        if (strpos(trim($line), '#') === 0) {
+            continue;
+        }
+        list($key, $value) = explode('=', $line, 2);
+        $_ENV[trim($key)] = trim($value);
+    }
+}
+
+try {
+    loadEnv();
+    $secretKey = $_ENV['RECAPTCHA_SECRET_KEY'];
+    $siteKey = $_ENV['RECAPTCHA_SITE_KEY'];
+} catch (Exception $e) {
+    die("Error: " . $e->getMessage());
+}
+
+session_start();
 
 $auth = new Auth($db);
 
@@ -12,55 +36,33 @@ $errorMessage = "";
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = trim($_POST['username']);
     $password = trim($_POST['password']);
+    $recaptchaToken = $_POST['recaptcha_token'] ?? '';
 
-    // Attempt login
-    if ($auth->login($username, $password)) {
-        if ($auth->isAdmin()) {
-            header("Location: admin.php");
-        } else {
-            header("Location: index.php");
-        }
-        exit();
-    } else {
-        $errorMessage = "Invalid username or password.";
-    }
-}
-
-
-// reCAPTCHA verification
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $secretKey = "6LehAJoqAAAAAJ-XeGtXukQyskqTdpMVVs7CEC6y"; // Replace with your Secret Key
-    $recaptchaToken = $_POST['recaptcha_token'];
-    $remoteIp = $_SERVER['REMOTE_ADDR'];
-
-    // Verify the token using Google's API
+    // Verify reCAPTCHA response
     $url = "https://www.google.com/recaptcha/api/siteverify";
-    $data = [
-        'secret' => $secretKey,
-        'response' => $recaptchaToken,
-        'remoteip' => $remoteIp
-    ];
 
-    // Use cURL to make the POST request
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, $url);
-    curl_setopt($ch, CURLOPT_POST, 1);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($data));
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    $response = curl_exec($ch);
-    curl_close($ch);
+    $response = file_get_contents($url . "?secret=" . $secretKey . "&response=" . $recaptchaToken . "&remoteip=" . $_SERVER['REMOTE_ADDR']);
 
     $captchaResult = json_decode($response, true);
 
-    // Check reCAPTCHA score
-    if ($captchaResult['success'] && $captchaResult['score'] >= 0.5) {
-        echo "reCAPTCHA verification successful!";
+    if (!$captchaResult['success']) {
+        $errorMessage = "reCAPTCHA verification failed: " . implode(", ", $captchaResult['error-codes'] ?? []);
+    } elseif ($captchaResult['score'] < 0.5) {
+        $errorMessage = "reCAPTCHA score too low. Please try again.";
     } else {
-        echo "reCAPTCHA verification failed. Please try again.";
+        // Attempt login
+        if ($auth->login($username, $password)) {
+            if ($auth->isAdmin()) {
+                header("Location: admin.php");
+            } else {
+                header("Location: index.php");
+            }
+            exit();
+        } else {
+            $errorMessage = "Invalid username or password.";
+        }
     }
 }
-
-
 ?>
 
 <!DOCTYPE html>
@@ -80,22 +82,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <label>
             <input type="password" name="password" required placeholder="Password">
         </label>
+        <input type="hidden" name="recaptcha_token" id="recaptcha_token">
         <button type="submit" class="button">Log in</button>
     </form>
     <p>Don't have an account? <a href="signup.php">Sign up</a></p>
     <?php if (!empty($errorMessage)) echo "<p class='error'>$errorMessage</p>"; ?>
-
-    <input type="hidden" name="recaptcha_token" id="recaptchaToken">
 </div>
 </body>
 </html>
 
-<!-- Include the reCAPTCHA API -->
-<script src="https://www.google.com/recaptcha/api.js?render=6LehAJoqAAAAANKMmswjqAzrgc2s35k7aM03SeMy"></script>
+<script src="https://www.google.com/recaptcha/api.js?render=<?php echo htmlspecialchars($siteKey); ?>"></script>
 <script>
-    grecaptcha.ready(function () {
-        grecaptcha.execute('6LehAJoqAAAAANKMmswjqAzrgc2s35k7aM03SeMy', { action: 'login' }).then(function (token) {
-            document.getElementById('recaptchaToken').value = token;
+    grecaptcha.ready(function() {
+        grecaptcha.execute('<?php echo htmlspecialchars($siteKey); ?>', {action: 'login'}).then(function(token) {
+            document.getElementById('recaptcha_token').value = token;
         });
     });
 </script>
