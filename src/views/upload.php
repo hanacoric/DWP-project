@@ -86,7 +86,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <title>Create New Post</title>
-    <link rel="stylesheet" href="../../../DWP/public/assets/css/upload.css">
+    <link rel="stylesheet" href="/public/assets/css/upload.css">
 </head>
 <body>
 <?php include '../views/sidebar.php'; ?>

@@ -71,7 +71,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && !isset($_GET['update'])) {
 
 try {
     $db->query("SELECT 1");
-    echo "Database connection is operational.";
 } catch (PDOException $e) {
     echo "Database connection failed: " . $e->getMessage();
 }
@@ -83,10 +82,11 @@ try {
 <head>
     <meta charset="UTF-8">
     <title>Profile - RandomShot</title>
-    <link rel="stylesheet" href="../../../DWP/public/assets/css/profile.css">
+    <link rel="stylesheet" href="../../public/assets/css/profile.css">
 </head>
 <body>
 <?php include 'sidebar.php'; ?>
+
 <div class="profile-container">
     <form method="POST" enctype="multipart/form-data" action="profile.php">
         <input type="hidden" name="csrf_token" value="<?php echo generateCsrfToken(); ?>">
@@ -131,3 +131,7 @@ try {
 </div>
 </body>
 </html>
+
+<style>
+
+</style>

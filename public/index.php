@@ -238,7 +238,7 @@ if ($userStatus !== 'Active') {
     <link rel="stylesheet" href="assets/css/sidebar.css">
 </head>
 <body>
-<?php include '../src/views/sidebar.php'; ?>
+<?php include '../../DWP/src/views/sidebar.php'; ?>
 
 <div class="main-content">
     <div class="profile-section">
@@ -288,9 +288,9 @@ if ($userStatus !== 'Active') {
                         </form>
 
                         <h3>Comments</h3>
-                        <ul>
+                        <div class="comment-list">
                             <?php foreach (fetchComments($db, $post['PostID'], 3) as $comment): ?>
-                                <li>
+                                <div class="comment-item">
                                     <strong><?php echo htmlspecialchars($comment['Username']); ?>:</strong>
                                     <?php echo htmlspecialchars($comment['Comment']); ?>
                                     <span>(<?php echo $comment['Timestamp']; ?>)</span>
@@ -302,9 +302,10 @@ if ($userStatus !== 'Active') {
                                             <button name="action" value="delete_comment" type="submit">Delete</button>
                                         </form>
                                     <?php endif; ?>
-                                </li>
+                                </div>
                             <?php endforeach; ?>
-                        </ul>
+                        </div>
+
                         <a href="../src/views/comments.php?post_id=<?php echo $post['PostID']; ?>">View All Comments</a>
                     </div>
                 <?php endforeach; ?>
@@ -315,6 +316,7 @@ if ($userStatus !== 'Active') {
     </div>
 
     <section id="posts" class="post-section">
+        <h3>All Posts</h3>
         <div class="post-grid">
             <?php if (!empty($posts)): ?>
                 <?php foreach ($posts as $post): ?>
@@ -355,9 +357,9 @@ if ($userStatus !== 'Active') {
                         </form>
 
                         <h3>Comments</h3>
-                        <ul>
+                        <div class="comment-list">
                             <?php foreach (fetchComments($db, $post['PostID'], 3) as $comment): ?>
-                                <li>
+                                <div class="comment-item">
                                     <strong><?php echo htmlspecialchars($comment['Username']); ?>:</strong>
                                     <?php echo htmlspecialchars($comment['Comment']); ?>
                                     <span>(<?php echo $comment['Timestamp']; ?>)</span>
@@ -369,9 +371,9 @@ if ($userStatus !== 'Active') {
                                             <button name="action" value="delete_comment" type="submit">Delete</button>
                                         </form>
                                     <?php endif; ?>
-                                </li>
+                                </div>
                             <?php endforeach; ?>
-                        </ul>
+                        </div>
                         <a href="../src/views/comments.php?post_id=<?php echo $post['PostID']; ?>">View All Comments</a>
                     </div>
                 <?php endforeach; ?>
@@ -384,3 +386,4 @@ if ($userStatus !== 'Active') {
     <script src="assets/js/home.js"></script>
 </body>
 </html>
+

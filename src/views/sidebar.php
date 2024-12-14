@@ -29,7 +29,7 @@ $homeURL = ($userRole === 'Admin') ? 'admin.php' : 'index.php';
     <meta charset="UTF-8">
     <title>Sidebar</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-    <link rel="stylesheet" href="../../public/assets/css/sidebar.css">
+
 </head>
 <body>
 <div class="sidebar">
@@ -41,7 +41,6 @@ $homeURL = ($userRole === 'Admin') ? 'admin.php' : 'index.php';
         <a href="../../../DWP/src/views/upload.php" class="upload-icon"><i class="fas fa-plus-circle "></i> Upload</a>
         <a href="../../../DWP/src/views/likes_notifications.php" class="likes-icon"><i class="fas fa-heart "></i> Likes</a>
         <a href="../../../DWP/src/views/comments_notifications.php" class="comments-icon"><i class="fas fa-comment "></i> Comments</a>
-        <a href="../../../DWP/src/views/settings.php" class="settings-icon"><i class="fas fa-cog "></i> Settings</a>
     </nav>
     <form method="POST" action="../../../DWP/public/logout.php" class="logout-form">
         <button type="submit" class="logout-button">Logout</button>
@@ -49,3 +48,81 @@ $homeURL = ($userRole === 'Admin') ? 'admin.php' : 'index.php';
 </div>
 </body>
 </html>
+
+<style>
+
+    .sidebar {
+        background-color: #111;
+        width: 300px;
+        height: 100vh;
+        position: fixed;
+        top: 0;
+        left: 0;
+        padding: 20px;
+        box-sizing: border-box;
+        z-index: 100;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .sidebar h1 {
+        color: white;
+        font-size: 2.5em;
+        margin-bottom: 20px;
+        text-align: center;
+    }
+
+    .sidebar h1 span {
+        color: #FFDF00;
+    }
+
+    .sidebar nav {
+        margin-top: 20px;
+        flex-grow: 1;
+    }
+
+    .sidebar nav a {
+        display: block;
+        padding: 15px;
+        color: white;
+        text-decoration: none;
+        font-weight: bold;
+        font-size: 1.4em;
+        border-radius: 5px;
+        transition: all 0.3s ease;
+    }
+
+    .sidebar nav a:hover {
+        background-color: #333;
+        color: #FFDF00;
+    }
+
+    .sidebar nav a i {
+        margin-right: 10px;
+        font-size: 2em;
+        color: #FFDF00;
+    }
+
+    .logout-button {
+        background-color: #FFDF00;
+        color: black;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        font-weight: bold;
+        cursor: pointer;
+        font-size: 1em;
+        transition: all 0.3s ease;
+        text-align: center;
+        display: block;
+    }
+
+    .logout-button:hover {
+        background-color: #FFBF00;
+        color: white;
+    }
+
+
+</style>
+
+
