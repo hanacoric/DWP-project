@@ -86,7 +86,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <title>Create New Post</title>
-    <link rel="stylesheet" href="/public/assets/css/upload.css">
+    <link rel="stylesheet" href="../../public/assets/css/upload.css">
 </head>
 <body>
 <?php include '../views/sidebar.php'; ?>
@@ -95,7 +95,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <h2>Create New Post</h2>
     <form action="upload.php" method="POST" enctype="multipart/form-data">
         <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
-        <label for="image_file">Upload Image:</label>
+
+        <label for="image_file" class="upload-btn">Upload Image</label>
         <input type="file" name="image_file" id="image_file" accept="image/*" required>
 
         <label for="caption">Caption:</label>
@@ -105,6 +106,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <button type="submit">Share Post</button>
     </form>
 </div>
+
 
 <script src="../../../DWP/public/assets/js/upload.js"></script>
 </body>
