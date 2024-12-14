@@ -8,6 +8,18 @@ require_once '../src/classes/post.php';
 require_once '../src/classes/notification.php';
 require_once '../src/classes/auth.php';
 
+// CSRF Token Functions
+function generateCsrfToken() {
+    if (empty($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
+    return $_SESSION['csrf_token'];
+}
+
+function validateCsrfToken($token) {
+    return isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token);
+}
+
 $auth = new Auth($db);
 
 if ($auth->isAdmin()) {
@@ -42,6 +54,12 @@ function fetchComments($db, $postID, $limit = 3) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['post_id'], $_POST['action'])) {
     $postID = intval($_POST['post_id']);
     $action = $_POST['action'];
+    $csrfToken = $_POST['csrf_token'] ?? '';
+
+    // Validate CSRF Token
+    if (!validateCsrfToken($csrfToken)) {
+        die("CSRF token validation failed.");
+    }
 
     try {
      if ($action === 'like') {
@@ -130,6 +148,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['post_id'], $_POST['ac
         if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['post_id'], $_POST['action'])) {
             $postID = intval($_POST['post_id']);
             $action = $_POST['action'];
+            $csrfToken = $_POST['csrf_token'] ?? '';
+
+            // Validate CSRF Token
+            if (!validateCsrfToken($csrfToken)) {
+                die("CSRF token validation failed.");
+            }
+
 
             try {
                 if ($action === 'unlike') {
@@ -202,6 +227,7 @@ if ($userStatus !== 'Active') {
 }
 
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -234,28 +260,26 @@ if ($userStatus !== 'Active') {
                 <?php foreach ($trendingPosts as $post): ?>
                     <div class="post" id="post-<?php echo $post['PostID']; ?>">
                         <?php if (!empty($post['BlobImage'])): ?>
-                            <!-- Display image from BlobImage column -->
+                            <!-- converts blob to base64 and displays it -->
                             <img src="data:image/jpeg;base64,<?php echo base64_encode($post['BlobImage']); ?>" alt="Post Image" width="300">
-                        <?php elseif (!empty($post['Image'])): ?>
-                            <!-- Display image from Image column (URL-based) -->
-                            <img src="<?php echo htmlspecialchars($post['Image']); ?>" alt="Post Image" width="300">
-                        <?php else: ?>
-                            <!-- Default placeholder image -->
-                            <img src="assets/images/default-placeholder.png" alt="Default Post Image" width="300">
                         <?php endif; ?>
+
                         <p><?php echo htmlspecialchars($post['Caption']); ?></p>
                         <p>Posted by: <?php echo htmlspecialchars($post['Username']); ?></p>
 
                         <form method="POST">
                             <input type="hidden" name="post_id" value="<?php echo $post['PostID']; ?>">
+                            <input type="hidden" name="csrf_token" value="<?php echo generateCsrfToken(); ?>">
                             <button name="action" value="like" type="submit">Like</button>
                             <button name="action" value="unlike" type="submit">Unlike</button>
                             <span class="like-count"><?php echo fetchLikeCount($db, $post['PostID']); ?> Likes</span>
+                            <input type="hidden" name="csrf_token" value="<?php echo generateCsrfToken(); ?>">
                             <a href="../src/views/likes.php?post_id=<?php echo $post['PostID']; ?>">See All Likes</a>
                         </form>
 
                         <form method="POST" class="comment-form">
                             <input type="hidden" name="post_id" value="<?php echo $post['PostID']; ?>">
+                            <input type="hidden" name="csrf_token" value="<?php echo generateCsrfToken(); ?>">
                             <label>
                                 <textarea name="comment" placeholder="Write a comment..." required></textarea>
                             </label>
@@ -273,6 +297,7 @@ if ($userStatus !== 'Active') {
                                         <form method="POST" style="display:inline;">
                                             <input type="hidden" name="post_id" value="<?php echo $post['PostID']; ?>">
                                             <input type="hidden" name="comment_id" value="<?php echo $comment['CommentID']; ?>">
+                                            <input type="hidden" name="csrf_token" value="<?php echo generateCsrfToken(); ?>">
                                             <button name="action" value="delete_comment" type="submit">Delete</button>
                                         </form>
                                     <?php endif; ?>
@@ -306,9 +331,11 @@ if ($userStatus !== 'Active') {
                                 <p>Your account is blocked. You cannot like, comment, or post.</p>
                             <?php else: ?>
                                 <input type="hidden" name="post_id" value="<?php echo $post['PostID']; ?>">
+                                <input type="hidden" name="csrf_token" value="<?php echo generateCsrfToken(); ?>">
                                 <button name="action" value="like" type="submit">Like</button>
                                 <button name="action" value="unlike" type="submit">Unlike</button>
                                 <span class="like-count"><?php echo fetchLikeCount($db, $post['PostID']); ?> Likes</span>
+                                <input type="hidden" name="csrf_token" value="<?php echo generateCsrfToken(); ?>">
                                 <a href="../src/views/likes.php?post_id=<?php echo $post['PostID']; ?>">See All Likes</a>
                             <?php endif; ?>
                         </form>
@@ -318,6 +345,7 @@ if ($userStatus !== 'Active') {
                                 <p>Your account is blocked. You cannot like, comment, or post.</p>
                             <?php else: ?>
                                 <input type="hidden" name="post_id" value="<?php echo $post['PostID']; ?>">
+                                <input type="hidden" name="csrf_token" value="<?php echo generateCsrfToken(); ?>">
                                 <label>
                                     <textarea name="comment" placeholder="Write a comment..." required></textarea>
                                 </label>
@@ -336,6 +364,7 @@ if ($userStatus !== 'Active') {
                                         <form method="POST" style="display:inline;">
                                             <input type="hidden" name="post_id" value="<?php echo $post['PostID']; ?>">
                                             <input type="hidden" name="comment_id" value="<?php echo $comment['CommentID']; ?>">
+                                            <input type="hidden" name="csrf_token" value="<?php echo generateCsrfToken(); ?>">
                                             <button name="action" value="delete_comment" type="submit">Delete</button>
                                         </form>
                                     <?php endif; ?>
@@ -350,8 +379,6 @@ if ($userStatus !== 'Active') {
             <?php endif; ?>
         </div>
     </section>
-
-
 
     <script src="assets/js/home.js"></script>
 </body>

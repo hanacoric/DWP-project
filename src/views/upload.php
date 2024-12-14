@@ -1,7 +1,12 @@
 <?php
 global $db;
-require_once '../includes/db.php';
 session_start();
+require_once '../includes/db.php';
+
+// Generate CSRF Token
+if (!isset($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
 
 if (!isset($_SESSION['user_id'])) {
     header("Location: /DWP/public/login.php");
@@ -9,6 +14,11 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Validate CSRF Token
+    if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+        die("Invalid CSRF token.");
+    }
+
     $caption = htmlspecialchars($_POST['caption'] ?? '', ENT_QUOTES, 'UTF-8');
     $userId = $_SESSION['user_id'];
 
@@ -84,6 +94,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <div class="upload-container">
     <h2>Create New Post</h2>
     <form action="upload.php" method="POST" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
         <label for="image_file">Upload Image:</label>
         <input type="file" name="image_file" id="image_file" accept="image/*" required>
 

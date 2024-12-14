@@ -1,20 +1,31 @@
 <?php
+session_start();
+global $db;
 require_once '../includes/db.php';
 require_once '../classes/user.php';
 
-session_start();
 
 if (!isset($_SESSION['user_id'])) {
     header("Location: /DWP/public/login.php");
     exit();
 }
 
-$db = new PDO("mysql:host=localhost;port=3306;dbname=SemesterProjectDB", "hana", "123456");
 $userObj = new User($db);
 
 $userID = $_SESSION['user_id'];
 
-// Fetch the user profile data to display in the form
+// CSRF Token Functions
+function generateCsrfToken() {
+    if (empty($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
+    return $_SESSION['csrf_token'];
+}
+
+function validateCsrfToken($token) {
+    return isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token);
+}
+
 $userProfile = $userObj->getUserProfile($userID);
 
 if (!$userProfile) {
@@ -22,36 +33,38 @@ if (!$userProfile) {
     exit();
 }
 
-// Process form submission
 if ($_SERVER["REQUEST_METHOD"] == "POST" && !isset($_GET['update'])) {
+    $csrfToken = $_POST['csrf_token'] ?? '';
+
+    // Validate CSRF Token
+    if (!validateCsrfToken($csrfToken)) {
+        die("CSRF token validation failed.");
+    }
+
     $newUsername = trim($_POST['username']);
     $newBio = trim($_POST['bio']);
     $newEmail = trim($_POST['email']);
     $newGender = trim($_POST['gender']);
     $newName = trim($_POST['name']);
 
-    // Debugging output to verify the values being passed to the update function
     echo "Form submitted. Values being passed to updateUserProfile:";
     echo "UserID: $userID, Bio: $newBio, Gender: $newGender, Name: $newName<br>";
 
-    // Check if a new profile picture was uploaded
+
     if (isset($_FILES['profile_picture']) && $_FILES['profile_picture']['error'] === UPLOAD_ERR_OK) {
         $imagePath = '/DWP/public/assets/images/profilePicture/' . basename($_FILES['profile_picture']['name']);
         move_uploaded_file($_FILES['profile_picture']['tmp_name'], $_SERVER['DOCUMENT_ROOT'] . $imagePath);
         $userObj->updateProfilePicture($userID, $imagePath);
     }
 
-    // Call the update method for the rest of the profile fields
     if ($userObj->updateUserProfile($userID, $newBio, $newGender, $newName)) {
         echo "Profile updated successfully!";
     } else {
         echo "Failed to update profile.";
     }
 
-    // Refresh the profile data after update
     $userProfile = $userObj->getUserProfile($userID);
 
-    // Redirect to avoid resubmission on page refresh
     header("Location: profile.php?update=success");
     exit();
 }
@@ -62,9 +75,6 @@ try {
 } catch (PDOException $e) {
     echo "Database connection failed: " . $e->getMessage();
 }
-
-?>
-
 
 ?>
 
@@ -79,6 +89,7 @@ try {
 <?php include 'sidebar.php'; ?>
 <div class="profile-container">
     <form method="POST" enctype="multipart/form-data" action="profile.php">
+        <input type="hidden" name="csrf_token" value="<?php echo generateCsrfToken(); ?>">
         <div class="profile-header">
             <div class="profile-picture-section">
                 <img src="<?php echo isset($userProfile['ProfilePicture']) ? htmlspecialchars($userProfile['ProfilePicture']) : '/DWP/public/assets/images/profileicon.png'; ?>" alt="Profile Picture" class="profile-picture">

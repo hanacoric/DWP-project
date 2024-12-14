@@ -29,6 +29,18 @@ try {
 
 session_start();
 
+// CSRF Token Functions
+function generateCsrfToken() {
+    if (empty($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
+    return $_SESSION['csrf_token'];
+}
+
+function validateCsrfToken($token) {
+    return isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token);
+}
+
 $auth = new Auth($db);
 
 $errorMessage = "";
@@ -38,6 +50,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = trim($_POST['email']);
     $password = trim($_POST['password']);
     $recaptchaToken = $_POST['recaptcha_token'] ?? '';
+    $csrfToken = $_POST['csrf_token'] ?? '';
+
+    // Validate CSRF Token
+    if (!validateCsrfToken($csrfToken)) {
+        die("CSRF token validation failed.");
+    }
 
     // Verify reCAPTCHA response
     $url = "https://www.google.com/recaptcha/api/siteverify";
@@ -76,6 +94,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <input type="text" name="username" placeholder="Username" required>
         <input type="password" name="password" required placeholder="Password">
         <input type="hidden" name="recaptcha_token" id="recaptchaToken">
+        <input type="hidden" name="csrf_token" value="<?php echo generateCsrfToken(); ?>">
         <button type="submit" class="button">Sign up</button>
     </form>
     <p>Already have an account? <a href="login.php">Log in</a></p>

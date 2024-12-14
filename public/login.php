@@ -1,5 +1,5 @@
 <?php
-global $db;
+global  $db;
 require_once '../src/includes/db.php';
 require_once '../src/classes/auth.php';
 
@@ -29,6 +29,18 @@ try {
 
 session_start();
 
+//CSRF token
+function generateCsrfToken() {
+    if (empty($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
+    return $_SESSION['csrf_token'];
+}
+
+function validateCsrfToken($token) {
+    return isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token);
+}
+
 $auth = new Auth($db);
 
 $errorMessage = "";
@@ -37,6 +49,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = trim($_POST['username']);
     $password = trim($_POST['password']);
     $recaptchaToken = $_POST['recaptcha_token'] ?? '';
+    $csrfToken = $_POST['csrf_token'] ?? '';
+
+    // Validate CSRF Token
+    if (!validateCsrfToken($csrfToken)) {
+        die("CSRF token validation failed.");
+    }
 
     // Verify reCAPTCHA response
     $url = "https://www.google.com/recaptcha/api/siteverify";
@@ -83,6 +101,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <input type="password" name="password" required placeholder="Password">
         </label>
         <input type="hidden" name="recaptcha_token" id="recaptcha_token">
+        <input type="hidden" name="csrf_token" value="<?php echo generateCsrfToken(); ?>">
         <button type="submit" class="button">Log in</button>
     </form>
     <p>Don't have an account? <a href="signup.php">Sign up</a></p>

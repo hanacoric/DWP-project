@@ -1,12 +1,17 @@
 <?php
 global $db;
 session_start();
-
 require_once '../src/includes/db.php';
 require_once '../src/classes/user.php';
 require_once '../src/classes/post.php';
 require_once '../src/classes/notification.php';
 require_once '../src/classes/auth.php';
+
+// Generate CSRF Token
+if (!isset($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+
 $auth = new Auth($db);
 
 if (!$auth->isAdmin()) {
@@ -24,14 +29,14 @@ $userObj = new User($db);
 $notificationObj = new Notification($db);
 $userProfile = $userObj->getUserProfile($userID);
 
-//fetch trending posts
+// Fetch trending posts
 try {
     $sql = "SELECT Post.PostID, Post.Image, Post.BlobImage, Post.Caption, Post.IsPinned, Post.IsTrending, User.Username FROM Post  JOIN User ON Post.UserID = User.UserID WHERE Post.IsTrending = TRUE ORDER BY Post.UploadDate DESC";
     $stmt = $db->prepare($sql);
     $stmt->execute();
     $trendingPosts = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-//convert blob to base64
+    // Convert blob to base64
     foreach ($trendingPosts as &$post) {
         if (!empty($post['Image'])) {
             $post['Image'] = 'data:image/jpeg;base64,' . base64_encode($post['Image']);
@@ -42,9 +47,7 @@ try {
     $trendingPosts = [];
 }
 
-//ADMIN STUFF
-
-$userID = $_SESSION['user_id'];
+// ADMIN STUFF
 $stmt = $db->prepare("SELECT Role.RoleName FROM User JOIN Role ON User.RoleID = Role.RoleID WHERE User.UserID = :userId");
 $stmt->execute([':userId' => $userID]);
 $role = $stmt->fetch(PDO::FETCH_ASSOC)['RoleName'];
@@ -53,44 +56,75 @@ if ($role !== 'Admin') {
     header("Location: index.php");
     exit();
 }
-//POST handling
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'], $_POST['post_id'])) {
-    $postID = intval($_POST['post_id']);
-    $action = $_POST['action'];
 
-    try {
-        $query = "";
-        $params = [':postId' => $postID];
+// POST handling
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Validate CSRF Token
+    if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+        die("Invalid CSRF token.");
+    }
 
-        switch ($action) {
-            case 'delete_post':
-                $query = "DELETE FROM Post WHERE PostID = :postId";
-                break;
-            case 'pin':
-                $query = "UPDATE Post SET IsPinned = TRUE WHERE PostID = :postId";
-                break;
+    if (isset($_POST['action'], $_POST['post_id'])) {
+        $postID = intval($_POST['post_id']);
+        $action = $_POST['action'];
 
-            case 'unpin':
-                $query = "UPDATE Post SET IsPinned = FALSE WHERE PostID = :postId";
-                break;
-            case 'trending':
-                $query = "UPDATE Post SET IsTrending = TRUE WHERE PostID = :postId";
-                break;
-            case 'not_trending':
-                $query = "UPDATE Post SET IsTrending = FALSE WHERE PostID = :postId";
-                break;
+        try {
+            $query = "";
+            $params = [':postId' => $postID];
+
+            switch ($action) {
+                case 'delete_post':
+                    $query = "DELETE FROM Post WHERE PostID = :postId";
+                    break;
+                case 'pin':
+                    $query = "UPDATE Post SET IsPinned = TRUE WHERE PostID = :postId";
+                    break;
+                case 'unpin':
+                    $query = "UPDATE Post SET IsPinned = FALSE WHERE PostID = :postId";
+                    break;
+                case 'trending':
+                    $query = "UPDATE Post SET IsTrending = TRUE WHERE PostID = :postId";
+                    break;
+                case 'not_trending':
+                    $query = "UPDATE Post SET IsTrending = FALSE WHERE PostID = :postId";
+                    break;
+            }
+
+            if (!empty($query)) {
+                $stmt = $db->prepare($query);
+                $stmt->execute($params);
+            }
+        } catch (PDOException $e) {
+            echo "Error: " . $e->getMessage();
         }
+    }
 
-        if (!empty($query)) {
-            $stmt = $db->prepare($query);
-            $stmt->execute($params);
+    if (isset($_POST['user_id'], $_POST['action'])) {
+        $userID = intval($_POST['user_id']);
+        $action = $_POST['action'];
+
+        try {
+            switch ($action) {
+                case 'block':
+                    $userObj->blockUser($userID);
+                    echo "User blocked successfully.";
+                    break;
+                case 'unblock':
+                    $userObj->unblockUser($userID);
+                    echo "User unblocked successfully.";
+                    break;
+                case 'delete':
+                    $userObj->deleteUserPermanently($userID);
+                    echo "User deleted successfully.";
+                    break;
+            }
+        } catch (PDOException $e) {
+            echo "Error: " . $e->getMessage();
         }
-    } catch (PDOException $e) {
-        echo "Error: " . $e->getMessage();
     }
 }
 
-// fetch all posts as default
+// Fetch all posts as default
 $posts = [];
 $searchResults = [];
 if (empty($_GET['search_user'])) {
@@ -120,43 +154,6 @@ if (empty($_GET['search_user'])) {
         echo "Error searching user or fetching posts: " . $e->getMessage();
     }
 }
-
-//fetch trending posts
-try {
-    $sql = "SELECT Post.PostID, Post.Image, Post.BlobImage, Post.Caption, Post.IsPinned, Post.IsTrending, User.Username, User.Status  FROM Post JOIN User ON Post.UserID = User.UserID WHERE Post.IsTrending = TRUE  ORDER BY Post.UploadDate DESC";
-    $stmt = $db->prepare($sql);
-    $stmt->execute();
-    $trendingPosts = $stmt->fetchAll(PDO::FETCH_ASSOC);
-} catch (PDOException $e) {
-    error_log("Error fetching trending posts: " . $e->getMessage());
-    $trendingPosts = [];
-}
-
-//block/unblock/delete actions
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['user_id'], $_POST['action'])) {
-    $userID = intval($_POST['user_id']);
-    $action = $_POST['action'];
-
-    try {
-        switch ($action) {
-            case 'block':
-                $userObj->blockUser($userID);
-                echo "User blocked successfully.";
-                break;
-            case 'unblock':
-                $userObj->unblockUser($userID);
-                echo "User unblocked successfully.";
-                break;
-            case 'delete':
-                $userObj->deleteUserPermanently($userID);
-                echo "User deleted successfully.";
-                break;
-        }
-    } catch (PDOException $e) {
-        echo "Error: " . $e->getMessage();
-    }
-}
-
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -169,6 +166,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['user_id'], $_POST['ac
 <body>
 <div class="admin-header">
     <form method="POST" action="logout.php" class="logout-form">
+        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
         <button type="submit" class="logout-button">Logout</button>
     </form>
 </div>
@@ -190,21 +188,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['user_id'], $_POST['ac
     <div id="trending" class="post-section" style="display: none;">
         <h3>Trending Posts</h3>
         <div class="post-grid">
-
             <?php if (!empty($trendingPosts)): ?>
                 <?php foreach ($trendingPosts as $post): ?>
                     <div class="post" id="post-<?php echo $post['PostID']; ?>">
                         <?php if (!empty($post['BlobImage'])): ?>
-                            <!-- Display image from BlobImage column -->
+                            <!-- converts blob to base64 and displays it -->
                             <img src="data:image/jpeg;base64,<?php echo base64_encode($post['BlobImage']); ?>" alt="Post Image" width="300">
-                        <?php elseif (!empty($post['Image'])): ?>
-                            <img src="<?php echo htmlspecialchars($post['Image']); ?>" alt="Post Image" width="300">
-                        <?php else: ?>
-                            <img src="assets/images/default-placeholder.png" alt="Default Post Image" width="300">
                         <?php endif; ?>
                         <p><?php echo htmlspecialchars($post['Caption']); ?></p>
                         <p>Posted by: <?php echo htmlspecialchars($post['Username']); ?></p>
                         <form method="POST">
+                            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
                             <input type="hidden" name="post_id" value="<?php echo $post['PostID']; ?>">
                             <button name="action" value="not_trending" type="submit">Unmark as Trending</button>
                         </form>
@@ -215,7 +209,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['user_id'], $_POST['ac
             <?php endif; ?>
         </div>
     </div>
-
 
     <form method="GET" class="search-form" style="display: flex; justify-content: flex-end; margin-bottom: 20px;">
         <label>
@@ -238,6 +231,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['user_id'], $_POST['ac
                             <p><?php echo htmlspecialchars($post['Caption']); ?></p>
                             <p>Posted by: <?php echo htmlspecialchars($post['Username']); ?> (<?php echo htmlspecialchars($post['Status']); ?>)</p>
                             <form method="POST">
+                                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
                                 <input type="hidden" name="post_id" value="<?php echo $post['PostID']; ?>">
                                 <button name="action" value="delete_post" type="submit">Delete</button>
                                 <button name="action" value="<?php echo $post['IsPinned'] ? 'unpin' : 'pin'; ?>" type="submit"><?php echo $post['IsPinned'] ? 'Unpin' : 'Pin'; ?></button>
@@ -247,15 +241,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['user_id'], $_POST['ac
                             </form>
                         </div>
                     <?php endforeach; ?>
-
                 <?php else: ?>
                     <p>No posts available.</p>
                 <?php endif; ?>
             </div>
         </section>
     <?php else: ?>
-
-
         <?php if (!empty($_GET['search_user'])): ?>
             <a href="admin.php" class="back-to-home">Back to Home</a>
         <?php endif; ?>
@@ -268,8 +259,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['user_id'], $_POST['ac
                         <h4>Username: <?php echo htmlspecialchars($result['Username']); ?></h4>
                         <p>Status: <?php echo htmlspecialchars($result['Status']); ?></p>
                         <p>Bio: <?php echo htmlspecialchars($result['Bio']); ?></p>
-                        <input type="hidden" name="user_id" value="<?php echo $result['UserID']; ?>">
                         <form method="POST">
+                            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
                             <input type="hidden" name="user_id" value="<?php echo $result['UserID']; ?>">
                             <?php if ($result['Status'] === 'Active'): ?>
                                 <button name="action" value="block" type="submit">Block</button>
@@ -278,7 +269,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['user_id'], $_POST['ac
                             <?php endif; ?>
                             <button name="action" value="delete" type="submit" onclick="return confirm('Are you sure you want to delete this user?');">Delete</button>
                         </form>
-
                     </div>
                 <?php endforeach; ?>
 
@@ -293,6 +283,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['user_id'], $_POST['ac
                                 <?php endif; ?>
                                 <p><?php echo htmlspecialchars($post['Caption']); ?></p>
                                 <form method="POST">
+                                    <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
                                     <input type="hidden" name="post_id" value="<?php echo $post['PostID']; ?>">
                                     <button name="action" value="delete_post" type="submit">Delete</button>
                                     <?php if (isset($post['IsPinned']) && $post['IsPinned']): ?>
@@ -318,9 +309,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['user_id'], $_POST['ac
         </section>
     <?php endif; ?>
 </div>
-
 <script src="assets/js/home.js"></script>
 </body>
 </html>
-
-
