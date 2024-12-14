@@ -43,8 +43,9 @@ function fetchLikeCount($db, $postID) {
     return $stmt->fetch(PDO::FETCH_ASSOC)['likeCount'];
 }
 
+//fetch recent comments using view
 function fetchComments($db, $postID, $limit = 3) {
-    $stmt = $db->prepare("SELECT Comments.CommentID, Comments.Comment, Comments.Timestamp, User.Username, Comments.UserID FROM Comments JOIN User ON Comments.UserID = User.UserID WHERE Comments.PostID = :postId ORDER BY Comments.Timestamp ASC LIMIT :commentLimit");
+    $stmt = $db->prepare("SELECT * FROM RecentComments WHERE PostID = :postId ORDER BY Timestamp DESC LIMIT :commentLimit");
     $stmt->bindParam(':postId', $postID, PDO::PARAM_INT);
     $stmt->bindParam(':commentLimit', $limit, PDO::PARAM_INT);
     $stmt->execute();
@@ -198,9 +199,9 @@ $stmt->execute();
 $posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 
-//fetch trending posts
+//fetch trending posts using view
 try {
-    $sql = "SELECT Post.PostID, Post.Image, Post.BlobImage, Post.Caption, Post.IsPinned, Post.IsTrending, User.Username FROM Post JOIN User ON Post.UserID = User.UserID WHERE Post.IsTrending = TRUE ORDER BY Post.UploadDate DESC";
+    $sql = "SELECT * FROM TrendingPosts";
     $stmt = $db->prepare($sql);
     $stmt->execute();
     $trendingPosts = $stmt->fetchAll(PDO::FETCH_ASSOC);

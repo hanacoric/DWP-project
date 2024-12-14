@@ -13,8 +13,8 @@ if (!isset($_SESSION['user_id'])) {
 
 $postID = intval($_GET['post_id']);
 
-// Fetch all comments for the post
-$stmt = $db->prepare("SELECT Comments.CommentID, Comments.Comment, Comments.Timestamp, User.Username, Comments.UserID FROM Comments JOIN User ON Comments.UserID = User.UserID WHERE Comments.PostID = :postId ORDER BY Comments.Timestamp ASC");
+//fetch recent comments using view
+$stmt = $db->prepare("SELECT * FROM RecentComments WHERE PostID = :postId ORDER BY Timestamp DESC");
 $stmt->execute(['postId' => $postID]);
 $comments = $stmt->fetchAll(PDO::FETCH_ASSOC);
 if (!$userObj->isUserActive($_SESSION['user_id'])) {
