@@ -30,27 +30,29 @@ if (!$userObj->isUserActive($_SESSION['user_id'])) {
 <head>
     <meta charset="UTF-8">
     <title>Comment Notifications</title>
-    <link rel="stylesheet" href="assets/css/home.css">
+    <link rel="stylesheet" href="../../public/assets/css/comments.css">
 </head>
 <body>
-<h1>Comment Notifications</h1>
+<?php include '../views/sidebar.php'; ?>
 
-<ul>
-    <?php if (!empty($notifications)): ?>
-        <?php foreach ($notifications as $notification): ?>
-            <?php if ($notification['ActionType'] === 'Comment'): ?>
-                <li>
-                    <p><?php echo htmlspecialchars($notification['Content']); ?></p>
-                    <small><?php echo htmlspecialchars($notification['Timestamp']); ?></small>
-                    <a href="post.php?post_id=<?php echo $notification['PostID']; ?>">View Post</a>
-                </li>
-            <?php endif; ?>
-        <?php endforeach; ?>
-    <?php else: ?>
-        <p>No new notifications.</p>
-    <?php endif; ?>
-</ul>
+<div class="notifications-section">
+    <h1>Comment Notifications</h1>
 
-<a href="../../../DWP/public/index.php">Back to Home</a>
+    <ul class="notifications-list">
+        <?php if (!empty($notifications)): ?>
+            <?php foreach ($notifications as $notification): ?>
+                <?php if ($notification['ActionType'] === 'Comment'): ?>
+                    <li class="notification-item">
+                        <p class="notification-content"><?php echo htmlspecialchars($notification['Content']); ?></p>
+                        <small class="notification-timestamp"><?php echo htmlspecialchars($notification['Timestamp']); ?></small>
+                    </li>
+                <?php endif; ?>
+            <?php endforeach; ?>
+        <?php else: ?>
+            <p class="no-notifications">No new notifications.</p>
+        <?php endif; ?>
+    </ul>
+</div>
 </body>
 </html>
+
