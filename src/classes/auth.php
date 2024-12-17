@@ -5,8 +5,9 @@ class Auth
 {
     private $db;
 
-    public function __construct($db)
+    public function __construct()
     {
+        global $db;
         $this->db = $db;
     }
 
@@ -50,62 +51,68 @@ class Auth
         session_destroy();
     }
 
-    // Register method
-    public function register($username, $email, $password, $role = 'User')
-    {
+// Register method
+    public function register($username, $email, $password, $role = 'User') {
+        $debug = "Starting registration: Username = $username, Email = $email\n";
+
         $username = trim($username);
-        $email = trim($email);
+        $email = strtolower(trim($email));
         $password = trim($password);
 
-        $sql = "SELECT * FROM User WHERE Username = :username OR Email = :email";
-        $stmt = $this->db->prepare($sql);
-        $stmt->bindParam(':username', $username);
-        $stmt->bindParam(':email', $email);
-        $stmt->execute();
-        $existingUser = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        if ($existingUser) {
-            return false;
-        }
-
-
-        $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-
-        $roleSql = "SELECT RoleID FROM Role WHERE RoleName = :roleName";
-        $roleStmt = $this->db->prepare($roleSql);
-        $roleStmt->bindParam(':roleName', $role);
-        $roleStmt->execute();
-        $roleData = $roleStmt->fetch(PDO::FETCH_ASSOC);
-
-        if (!$roleData) {
-            return false;
-        }
-
-        $roleID = $roleData['RoleID'];
-
-
-        $sql = "INSERT INTO User (Username, Email, Password, Status, RoleID) VALUES (:username, :email, :password, 'Active', :roleID)";
-        $stmt = $this->db->prepare($sql);
-        $stmt->bindParam(':username', $username);
-        $stmt->bindParam(':email', $email);
-        $stmt->bindParam(':password', $hashedPassword);
-        $stmt->bindParam(':roleID', $roleID);
-
         try {
+            // Check for duplicate users
+            $sql = "SELECT * FROM User WHERE LOWER(Username) = LOWER(:username) OR LOWER(Email) = LOWER(:email)";
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindParam(':username', $username);
+            $stmt->bindParam(':email', $email);
             $stmt->execute();
+            $existingUser = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            $debug .= "Duplicate check result: " . json_encode($existingUser) . "\n";
+
+            if ($existingUser) {
+                $debug .= "Duplicate user found\n";
+                return [false, $debug];
+            }
+
+            $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+            $roleSql = "SELECT RoleID FROM Role WHERE RoleName = :roleName";
+            $roleStmt = $this->db->prepare($roleSql);
+            $roleStmt->bindParam(':roleName', $role);
+            $roleStmt->execute();
+            $roleData = $roleStmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$roleData) {
+                $debug .= "Role not found: $role\n";
+                return [false, $debug];
+            }
+
+            $roleID = $roleData['RoleID'];
+            $sql = "INSERT INTO User (Username, Email, Password, Status, RoleID) VALUES (:username, :email, :password, 'Active', :roleID)";
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindParam(':username', $username);
+            $stmt->bindParam(':email', $email);
+            $stmt->bindParam(':password', $hashedPassword);
+            $stmt->bindParam(':roleID', $roleID);
+            $stmt->execute();
+
             $userID = $this->db->lastInsertId();
+            $debug .= "User successfully created with ID: $userID\n";
 
             $sqlProfile = "INSERT INTO UserProfile (UserID, Bio, Gender, FirstLast) VALUES (:userID, '', '', '')";
             $stmtProfile = $this->db->prepare($sqlProfile);
             $stmtProfile->bindParam(':userID', $userID);
             $stmtProfile->execute();
+            $debug .= "UserProfile successfully created for UserID: $userID\n";
 
-            return true;
+            return [true, $debug];
         } catch (PDOException $e) {
-            error_log("Registration error: " . $e->getMessage());
-            return false;
+            $debug .= "Registration error: " . $e->getMessage() . "\n";
+            return [false, $debug];
         }
     }
+
+
 
     public function isAdmin()
     {
@@ -114,6 +121,4 @@ class Auth
         }
         return isset($_SESSION['role']) && $_SESSION['role'] === 'Admin';
     }
-
-
 }

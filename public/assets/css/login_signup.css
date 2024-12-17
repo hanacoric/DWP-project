@@ -29,7 +29,7 @@ h1 {
 }
 
 h1 span {
-    color: yellow;
+    color: #FFBF00;
 }
 
 form input {
@@ -47,7 +47,7 @@ form input {
     width: 50%;
     padding: 15px;
     margin: 20px 0;
-    background-color: yellow;
+    background-color: #FFBF00;
     border: none;
     border-radius: 5px;
     color: #000;
@@ -63,7 +63,7 @@ p {
 }
 
 p a {
-    color: yellow;
+    color: #FFBF00;
     text-decoration: none;
 }
 

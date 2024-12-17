@@ -210,7 +210,6 @@ public function updateProfilePicture($userID, $profilePicturePath) {
                     return true;
                 } else {
                     echo "Profile update failed.";
-                    print_r($stmt->errorInfo()); // Debugging statement
                     return false;
                 }
             } catch (PDOException $e) {

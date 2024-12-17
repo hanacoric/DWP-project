@@ -29,19 +29,21 @@ $userObj = new User($db);
 $notificationObj = new Notification($db);
 $userProfile = $userObj->getUserProfile($userID);
 
-// Fetch trending posts
+//fetch trending posts using view
 try {
-    $sql = "SELECT Post.PostID, Post.Image, Post.BlobImage, Post.Caption, Post.IsPinned, Post.IsTrending, User.Username FROM Post  JOIN User ON Post.UserID = User.UserID WHERE Post.IsTrending = TRUE ORDER BY Post.UploadDate DESC";
+    $sql = "SELECT DISTINCT PostID, UserID, Image, BlobImage, Caption, Username FROM TrendingPosts";
     $stmt = $db->prepare($sql);
     $stmt->execute();
     $trendingPosts = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // Convert blob to base64
-    foreach ($trendingPosts as &$post) {
-        if (!empty($post['Image'])) {
-            $post['Image'] = 'data:image/jpeg;base64,' . base64_encode($post['Image']);
+    foreach ($trendingPosts as $key => $post) {
+        if (!empty($post['BlobImage'])) {
+            $trendingPosts[$key]['Image'] = 'data:image/jpeg;base64,' . base64_encode($post['BlobImage']);
+        } else {
+            $trendingPosts[$key]['Image'] = '/path/to/default/image.png';
         }
     }
+
 } catch (PDOException $e) {
     echo "Error fetching trending posts: " . $e->getMessage();
     $trendingPosts = [];
@@ -81,12 +83,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     break;
                 case 'unpin':
                     $query = "UPDATE Post SET IsPinned = FALSE WHERE PostID = :postId";
-                    break;
-                case 'trending':
-                    $query = "UPDATE Post SET IsTrending = TRUE WHERE PostID = :postId";
-                    break;
-                case 'not_trending':
-                    $query = "UPDATE Post SET IsTrending = FALSE WHERE PostID = :postId";
                     break;
             }
 
@@ -160,16 +156,10 @@ if (empty($_GET['search_user'])) {
 <head>
     <meta charset="UTF-8">
     <title>Admin Panel - RandomShot</title>
-    <link rel="stylesheet" href="assets/css/home.css">
+    <link rel="stylesheet" href="assets/css/admin.css">
     <link rel="stylesheet" href="assets/css/sidebar.css">
 </head>
 <body>
-<div class="admin-header">
-    <form method="POST" action="logout.php" class="logout-form">
-        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
-        <button type="submit" class="logout-button">Logout</button>
-    </form>
-</div>
 
 <div class="main-content">
     <div class="profile-section">
@@ -178,7 +168,19 @@ if (empty($_GET['search_user'])) {
             <h2 class="username"><?php echo htmlspecialchars($userProfile['Username']); ?></h2>
             <p class="bio"><?php echo htmlspecialchars($userProfile['Bio'] ?? ''); ?></p>
         </div>
+        <form method="POST" action="logout.php" class="logout-form">
+            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
+            <button type="submit" class="logout-button">Logout</button>
+        </form>
     </div>
+
+    <form method="GET" class="search-form" style="display: flex; justify-content: flex-end;">
+        <label>
+            <input type="text" name="search_user" placeholder="Search for users..." value="<?php echo isset($_GET['search_user']) ? htmlspecialchars($_GET['search_user']) : ''; ?>" required>
+        </label>
+        <button type="submit">Search</button>
+    </form>
+
 
     <div class="tabs">
         <a href="#" class="active" onclick="showSection('posts')">POSTS</a>
@@ -192,16 +194,10 @@ if (empty($_GET['search_user'])) {
                 <?php foreach ($trendingPosts as $post): ?>
                     <div class="post" id="post-<?php echo $post['PostID']; ?>">
                         <?php if (!empty($post['BlobImage'])): ?>
-                            <!-- converts blob to base64 and displays it -->
                             <img src="data:image/jpeg;base64,<?php echo base64_encode($post['BlobImage']); ?>" alt="Post Image" width="300">
                         <?php endif; ?>
                         <p><?php echo htmlspecialchars($post['Caption']); ?></p>
                         <p>Posted by: <?php echo htmlspecialchars($post['Username']); ?></p>
-                        <form method="POST">
-                            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
-                            <input type="hidden" name="post_id" value="<?php echo $post['PostID']; ?>">
-                            <button name="action" value="not_trending" type="submit">Unmark as Trending</button>
-                        </form>
                     </div>
                 <?php endforeach; ?>
             <?php else: ?>
@@ -209,13 +205,6 @@ if (empty($_GET['search_user'])) {
             <?php endif; ?>
         </div>
     </div>
-
-    <form method="GET" class="search-form" style="display: flex; justify-content: flex-end; margin-bottom: 20px;">
-        <label>
-            <input type="text" name="search_user" placeholder="Search for users..." value="<?php echo isset($_GET['search_user']) ? htmlspecialchars($_GET['search_user']) : ''; ?>" required>
-        </label>
-        <button type="submit">Search</button>
-    </form>
 
     <?php if (empty($_GET['search_user'])): ?>
         <section id="posts" class="post-section">
@@ -235,9 +224,6 @@ if (empty($_GET['search_user'])) {
                                 <input type="hidden" name="post_id" value="<?php echo $post['PostID']; ?>">
                                 <button name="action" value="delete_post" type="submit">Delete</button>
                                 <button name="action" value="<?php echo $post['IsPinned'] ? 'unpin' : 'pin'; ?>" type="submit"><?php echo $post['IsPinned'] ? 'Unpin' : 'Pin'; ?></button>
-                                <button name="action" value="<?php echo $post['IsTrending'] ? 'not_trending' : 'trending'; ?>" type="submit">
-                                    <?php echo $post['IsTrending'] ? 'Unmark as Trending' : 'Mark as Trending'; ?>
-                                </button>
                             </form>
                         </div>
                     <?php endforeach; ?>
@@ -291,11 +277,6 @@ if (empty($_GET['search_user'])) {
                                     <?php else: ?>
                                         <button name="action" value="pin" type="submit">Pin</button>
                                     <?php endif; ?>
-                                    <?php if (isset($post['IsTrending']) && $post['IsTrending']): ?>
-                                        <button name="action" value="not_trending" type="submit">Mark as Not Trending</button>
-                                    <?php else: ?>
-                                        <button name="action" value="trending" type="submit">Mark as Trending</button>
-                                    <?php endif; ?>
                                 </form>
                             </div>
                         <?php endforeach; ?>
@@ -312,3 +293,54 @@ if (empty($_GET['search_user'])) {
 <script src="assets/js/home.js"></script>
 </body>
 </html>
+
+<style>
+    .search-form {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        width: 50%;
+        position: absolute;
+        right: 20px;
+        top: 10px;
+    }
+
+    .search-form input[type="text"] {
+        padding: 10px 15px;
+        border: 2px solid #FFDF00;
+        border-right: none;
+        border-radius: 25px 0 0 25px;
+        outline: none;
+        font-size: 1em;
+        background-color: #333;
+        color: white;
+        transition: all 0.3s ease;
+        width: 200px;
+    }
+
+    .search-form input[type="text"]::placeholder {
+        color: #aaa;
+        font-style: italic;
+    }
+
+    .search-form input[type="text"]:focus {
+        border-color: #FFBF00;
+    }
+
+    .search-form button {
+        background-color: #FFDF00;
+        color: black;
+        border: 2px solid #FFDF00;
+        border-left: none;
+        padding: 10px 20px;
+        font-weight: bold;
+        font-size: 1em;
+        border-radius: 0 25px 25px 0;
+        cursor: pointer;
+        transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    .search-form button:hover {
+        background-color: #FFBF00;
+        color: white;
+</style>
