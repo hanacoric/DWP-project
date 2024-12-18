@@ -7,7 +7,7 @@ require_once '../src/classes/post.php';
 require_once '../src/classes/notification.php';
 require_once '../src/classes/auth.php';
 
-// Generate CSRF Token
+//generate CSRF token
 if (!isset($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
@@ -31,7 +31,7 @@ $userProfile = $userObj->getUserProfile($userID);
 
 //fetch trending posts using view
 try {
-    $sql = "SELECT DISTINCT PostID, UserID, Image, BlobImage, Caption, Username FROM TrendingPosts";
+    $sql = "SELECT DISTINCT PostID, UserID, BlobImage, Caption, Username FROM TrendingPosts";
     $stmt = $db->prepare($sql);
     $stmt->execute();
     $trendingPosts = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -120,12 +120,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Fetch all posts as default
+//fetch all posts as default
 $posts = [];
 $searchResults = [];
 if (empty($_GET['search_user'])) {
     try {
-        $sql = "SELECT Post.PostID, Post.Image, Post.BlobImage, Post.Caption, Post.IsPinned, Post.IsTrending, User.Username, User.Status FROM Post  JOIN User ON Post.UserID = User.UserID ORDER BY Post.UploadDate DESC";
+        $sql = "SELECT Post.PostID, Post.BlobImage, Post.Caption, Post.IsPinned, User.Username, User.Status FROM Post  JOIN User ON Post.UserID = User.UserID ORDER BY Post.UploadDate DESC";
         $stmt = $db->prepare($sql);
         $stmt->execute();
         $posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -142,7 +142,7 @@ if (empty($_GET['search_user'])) {
         if (!empty($searchResults)) {
             $selectedUserID = $searchResults[0]['UserID'];
 
-            $stmt = $db->prepare("SELECT Post.PostID, Post.Image, Post.BlobImage, Post.Caption, Post.IsPinned FROM Post WHERE Post.UserID = :userId ORDER BY Post.UploadDate DESC");
+            $stmt = $db->prepare("SELECT Post.PostID, Post.BlobImage, Post.Caption, Post.IsPinned FROM Post WHERE Post.UserID = :userId ORDER BY Post.UploadDate DESC");
             $stmt->execute([':userId' => $selectedUserID]);
             $posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
         }

@@ -1,28 +1,23 @@
 <?php
+global $db;
 require_once __DIR__ . '/../../src/includes/db.php';
 require_once __DIR__ . '/../../src/classes/User.php';
 
-// Initialize the database connection
-$db = new PDO("mysql:host=localhost;port=3306;dbname=SemesterProjectDB", "hana", "123456");
-$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
-// Initialize the User object
 $User = new User($db);
 
-// Test Data
+
 $username = "testUserRead";
 $email = "testuserread@example.com";
 $password = "securePassword123";
 
-// Step 1: Create a test user
+
 echo "Testing createUser for Read Test: ";
 $createResult = $User->createUser($username, $email, $password);
 
 if ($createResult) {
     echo "User created successfully.<br>";
 
-    // Step 2: Retrieve the user by ID
-    // Find the user ID for the created user
+
     $stmt = $db->prepare("SELECT userID FROM User WHERE Username = :username");
     $stmt->bindParam(':username', $username);
     $stmt->execute();
@@ -31,7 +26,7 @@ if ($createResult) {
     if ($createdUser) {
         $userID = $createdUser['userID'];
 
-        // Test the getUser method
+
         echo "Testing getUser: ";
         $retrievedUser = $User->getUser($userID);
 
@@ -40,7 +35,7 @@ if ($createResult) {
             echo "Username: " . htmlspecialchars($retrievedUser['Username']) . "<br>";
             echo "Email: " . htmlspecialchars($retrievedUser['Email']) . "<br>";
 
-            // Verify that the retrieved data matches the created user data
+
             if ($retrievedUser['Username'] === $username && $retrievedUser['Email'] === $email) {
                 echo "Verification: Retrieved data matches expected values.<br>";
             } else {
@@ -50,7 +45,6 @@ if ($createResult) {
             echo "Failed to retrieve user.<br>";
         }
 
-        // Step 3: Clean up by deleting the test user
         $stmt = $db->prepare("DELETE FROM User WHERE userID = :userID");
         $stmt->bindParam(':userID', $userID);
         $stmt->execute();

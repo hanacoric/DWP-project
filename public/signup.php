@@ -1,7 +1,6 @@
 <?php
-ini_set('display_errors', 1);
-error_reporting(E_ALL);
 
+session_start();
 global $db;
 
 require_once '../src/includes/db.php';
@@ -16,7 +15,6 @@ try {
     die("Error: " . $e->getMessage());
 }
 
-session_start();
 
 function generateCsrfToken() {
     if (empty($_SESSION['csrf_token'])) {

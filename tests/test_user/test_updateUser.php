@@ -1,27 +1,23 @@
 <?php
+global $db;
 require_once __DIR__ . '/../../src/includes/db.php';
 require_once __DIR__ . '/../../src/classes/User.php';
 
-// Initialize the database connection
-$db = new PDO("mysql:host=localhost;port=3306;dbname=SemesterProjectDB", "hana", "123456");
-$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-// Initialize the User object
 $user = new User($db);
 
-// Test Data
+
 $username = "testUserUpdate";
 $email = "testuserupdate@example.com";
 $password = "securePassword123";
 
-// Step 1: Create a test user
+
 echo "Testing createUser for Update Test: ";
 $createResult = $user->createUser($username, $email, $password);
 
 if ($createResult) {
     echo "User created successfully.<br>";
 
-    // Step 2: Retrieve the UserID of the newly created user
     $stmt = $db->prepare("SELECT UserID FROM User WHERE Username = :username");
     $stmt->bindParam(':username', $username);
     $stmt->execute();
@@ -30,7 +26,7 @@ if ($createResult) {
     if ($createdUser) {
         $userID = $createdUser['UserID'];
 
-        // Step 3: Update the user details
+
         $newUsername = "updatedUser";
         $newEmail = "updateduser@example.com";
 
@@ -40,7 +36,6 @@ if ($createResult) {
         if ($updateResult) {
             echo "User updated successfully.<br>";
 
-            // Step 4: Verify the update
             $updatedUser = $user->getUser($userID);
 
             if ($updatedUser) {
@@ -60,7 +55,6 @@ if ($createResult) {
             echo "Failed to update user.<br>";
         }
 
-        // Step 5: Clean up by deleting the test user
         $stmt = $db->prepare("DELETE FROM User WHERE UserID = :userID");
         $stmt->bindParam(':userID', $userID);
         $stmt->execute();

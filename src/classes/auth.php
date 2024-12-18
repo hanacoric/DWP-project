@@ -11,7 +11,7 @@ class Auth
         $this->db = $db;
     }
 
-    // Login method
+    //login
     public function login($username, $password)
     {
         $sql = "SELECT User.*, Role.RoleName FROM User LEFT JOIN Role ON User.RoleID = Role.RoleID WHERE Username = :username";
@@ -30,7 +30,6 @@ class Auth
         return false;
     }
 
-    // Check if user is logged in
     public function isLoggedIn()
     {
         if (session_status() === PHP_SESSION_NONE) {
@@ -41,7 +40,7 @@ class Auth
 
 
 
-    // Logout method
+    //logout
     public function logout()
     {
         if (session_status() === PHP_SESSION_NONE) {
@@ -51,7 +50,7 @@ class Auth
         session_destroy();
     }
 
-// Register method
+//register
     public function register($username, $email, $password, $role = 'User') {
         $debug = "Starting registration: Username = $username, Email = $email\n";
 
@@ -60,7 +59,6 @@ class Auth
         $password = trim($password);
 
         try {
-            // Check for duplicate users
             $sql = "SELECT * FROM User WHERE LOWER(Username) = LOWER(:username) OR LOWER(Email) = LOWER(:email)";
             $stmt = $this->db->prepare($sql);
             $stmt->bindParam(':username', $username);

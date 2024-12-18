@@ -64,7 +64,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['post_id'], $_POST['ac
     $action = $_POST['action'];
     $csrfToken = $_POST['csrf_token'] ?? '';
 
-    // Validate CSRF Token
     if (!validateCsrfToken($csrfToken)) {
         die("CSRF token validation failed.");
     }
@@ -158,7 +157,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['post_id'], $_POST['ac
             $action = $_POST['action'];
             $csrfToken = $_POST['csrf_token'] ?? '';
 
-            // Validate CSRF Token
             if (!validateCsrfToken($csrfToken)) {
                 die("CSRF token validation failed.");
             }
@@ -206,7 +204,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['post_id'], $_POST['ac
     }
 }
 try {
-    $sql = "SELECT Post.PostID, Post.UserID, Post.Image, Post.BlobImage, Post.Caption, User.Username FROM Post JOIN User ON Post.UserID = User.UserID ORDER BY Post.UploadDate DESC";
+    $sql = "SELECT Post.PostID, Post.UserID, Post.BlobImage, Post.Caption, User.Username FROM Post JOIN User ON Post.UserID = User.UserID ORDER BY Post.UploadDate DESC";
     $stmt = $db->prepare($sql);
     $stmt->execute();
     $posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -215,12 +213,8 @@ try {
     $posts = [];
 }
 
-// Fetch all posts with pinned posts first
 try {
-    $sql = "SELECT Post.PostID, Post.UserID, Post.Image, Post.BlobImage, Post.Caption, Post.IsPinned, User.Username 
-            FROM Post 
-            JOIN User ON Post.UserID = User.UserID 
-            ORDER BY Post.IsPinned DESC, Post.UploadDate DESC";
+    $sql = "SELECT Post.PostID, Post.UserID, Post.BlobImage, Post.Caption, Post.IsPinned, User.Username  FROM Post JOIN User ON Post.UserID = User.UserID ORDER BY Post.IsPinned DESC, Post.UploadDate DESC";
     $stmt = $db->prepare($sql);
     $stmt->execute();
     $allPosts = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -229,13 +223,9 @@ try {
     $allPosts = [];
 }
 
-
-
-
-
 //fetch trending posts using view
 try {
-    $sql = "SELECT DISTINCT PostID, UserID, Image, BlobImage, Caption, Username FROM TrendingPosts";
+    $sql = "SELECT DISTINCT PostID, UserID, BlobImage, Caption, Username FROM TrendingPosts";
     $stmt = $db->prepare($sql);
     $stmt->execute();
     $trendingPosts = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -265,31 +255,21 @@ if ($userStatus !== 'Active') {
     exit();
 }
 
-// Fetch searched user
+//search user
 $searchResults = [];
 $posts = [];
 
 if (!empty($_GET['search_user'])) {
     $searchQuery = trim($_GET['search_user']);
     try {
-        $stmt = $db->prepare("
-            SELECT User.UserID, User.Username, User.Email, UserProfile.Bio, UserProfile.BlobProfilePicture 
-            FROM User 
-            LEFT JOIN UserProfile ON User.UserID = UserProfile.UserID 
-            WHERE User.Username LIKE :search
-        ");
+        $stmt = $db->prepare("SELECT User.UserID, User.Username, User.Email, UserProfile.Bio, UserProfile.BlobProfilePicture FROM User LEFT JOIN UserProfile ON User.UserID = UserProfile.UserID WHERE User.Username LIKE :search");
         $stmt->execute([':search' => '%' . $searchQuery . '%']);
         $searchResults = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         if (!empty($searchResults)) {
             $selectedUserID = $searchResults[0]['UserID'];
 
-            $stmt = $db->prepare("
-                SELECT Post.PostID, Post.Caption, Post.BlobImage 
-                FROM Post 
-                WHERE Post.UserID = :userId 
-                ORDER BY Post.UploadDate DESC
-            ");
+            $stmt = $db->prepare("SELECT Post.PostID, Post.Caption, Post.BlobImage  FROM Post  WHERE Post.UserID = :userId ORDER BY Post.UploadDate DESC");
             $stmt->execute([':userId' => $selectedUserID]);
             $posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
         }
@@ -412,18 +392,15 @@ if (!empty($_GET['search_user'])) {
             <?php if (!empty($trendingPosts)): ?>
                 <?php foreach ($trendingPosts as $post): ?>
                     <div class="post" id="post-<?php echo $post['PostID']; ?>">
-                        <!-- Post Image -->
                         <?php if (!empty($post['BlobImage'])): ?>
                             <img src="data:image/jpeg;base64,<?php echo base64_encode($post['BlobImage']); ?>" alt="Post Image" width="300">
                         <?php else: ?>
                             <img src="/DWP/public/assets/images/default-image.png" alt="Default Image" width="300">
                         <?php endif; ?>
 
-                        <!-- Post Caption and User -->
                         <p><?php echo htmlspecialchars($post['Caption']); ?></p>
                         <p>Posted by: <?php echo isset($post['Username']) ? htmlspecialchars($post['Username']) : 'Unknown User'; ?></p>
 
-                        <!-- Like and Unlike Buttons -->
                         <form method="POST">
                             <input type="hidden" name="post_id" value="<?php echo $post['PostID']; ?>">
                             <input type="hidden" name="csrf_token" value="<?php echo generateCsrfToken(); ?>">
@@ -433,7 +410,6 @@ if (!empty($_GET['search_user'])) {
                             <a href="../src/views/likes.php?post_id=<?php echo $post['PostID']; ?>">View All Likes</a>
                         </form>
 
-                        <!-- Comment Box -->
                         <form method="POST" class="comment-form">
                             <input type="hidden" name="post_id" value="<?php echo $post['PostID']; ?>">
                             <input type="hidden" name="csrf_token" value="<?php echo generateCsrfToken(); ?>">
@@ -443,7 +419,6 @@ if (!empty($_GET['search_user'])) {
                             <button name="action" value="comment" type="submit">Post Comment</button>
                         </form>
 
-                        <!-- Comments Section -->
                         <h3>Comments</h3>
                         <div class="comment-list">
                             <?php $comments = fetchComments($db, $post['PostID'], 3); ?>
@@ -564,8 +539,8 @@ if (!empty($_GET['search_user'])) {
         width: 100%;
         margin-bottom: 20px;
         position: absolute;
-        right: 20px; /* Ensures it's positioned on the right side */
-        top: 10px; /* Adjust vertically as needed */
+        right: 20px;
+        top: 10px;
     }
 
     .search-form input[type="text"] {
@@ -578,7 +553,7 @@ if (!empty($_GET['search_user'])) {
         background-color: #333;
         color: white;
         transition: all 0.3s ease;
-        width: 200px; /* Adjust as needed */
+        width: 200px;
     }
 
     .search-form input[type="text"]::placeholder {

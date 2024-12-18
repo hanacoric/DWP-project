@@ -5,7 +5,7 @@ class Notification
     private $notificationID;
     private $userID;
     private $postID;
-    private $actionType; //like or comment
+    private $actionType;
     private $content;
     private $timestamp;
     private $db;

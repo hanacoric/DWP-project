@@ -1,9 +1,7 @@
 <?php
+global $db;
 require_once __DIR__ . '/../../src/includes/db.php';
 require_once __DIR__ . '/../../src/classes/post.php';
-
-$db = new PDO("mysql:host=localhost;port=3306;dbname=SemesterProjectDB", "hana", "123456");
-$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
 $post = new Post($db);
 
@@ -14,7 +12,7 @@ function printResult($testName, $result)
 
 $image = "test_image.png";
 $caption = "Test caption";
-$userID = 3; // Use an existing UserID for testing
+$userID = 3;
 
 
 $createResult = $post->createPost($image, $caption, $userID);

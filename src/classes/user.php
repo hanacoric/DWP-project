@@ -87,10 +87,7 @@ class User {
 
     // READ (get user profile by User ID)
     public function getUserProfile($userID) {
-        $sql = "SELECT u.Username, u.Email, p.ProfilePicture, p.Bio, p.Gender, p.FirstLast
-            FROM User u 
-            LEFT JOIN UserProfile p ON u.UserID = p.UserID 
-            WHERE u.UserID = :userID";
+        $sql = "SELECT u.Username, u.Email, p.BlobProfilePicture, p.Bio, p.Gender, p.FirstLast FROM User u LEFT JOIN UserProfile p ON u.UserID = p.UserID WHERE u.UserID = :userID";
         $stmt = $this->db->prepare($sql);
         $stmt->bindParam(':userID', $userID);
 
@@ -98,9 +95,7 @@ class User {
             $stmt->execute();
             $profile = $stmt->fetch(PDO::FETCH_ASSOC);
 
-            // Check if profile data is available
             if (!$profile || !isset($profile['Username'])) {
-                // Return default profile values if no entry exists
                 return [
                     'Username' => 'DefaultUser',
                     'Email' => 'default@example.com',
@@ -157,23 +152,7 @@ class User {
     }
 
 
-// Method to update the profile picture
-public function updateProfilePicture($userID, $profilePicturePath) {
-    $sql = "UPDATE UserProfile SET ProfilePicture = :profilePicture WHERE UserID = :userID";
-    $stmt = $this->db->prepare($sql);
-    $stmt->bindParam(':profilePicture', $profilePicturePath);
-    $stmt->bindParam(':userID', $userID);
-
-    try {
-        $stmt->execute();
-        return true;
-    } catch (PDOException $e) {
-        echo "Error updating profile picture: " . $e->getMessage();
-        return false;
-    }
-}
-
-    // Method to update user profile information
+    //method to update user profile information
     public function updateUserProfile($userID, $bio, $gender, $firstLast) {
         $checkSql = "SELECT COUNT(*) FROM UserProfile WHERE UserID = :userID";
         $checkStmt = $this->db->prepare($checkSql);
@@ -219,7 +198,7 @@ public function updateProfilePicture($userID, $profilePicturePath) {
         }
     }
 
-    // Block a user
+    //block a user
     public function blockUser($userID) {
         $sql = "UPDATE User SET Status = 'Blocked' WHERE UserID = :userID";
         $stmt = $this->db->prepare($sql);
@@ -234,7 +213,7 @@ public function updateProfilePicture($userID, $profilePicturePath) {
         }
     }
 
-// Unblock a user
+//unblock a user
     public function unblockUser($userID) {
         $sql = "UPDATE User SET Status = 'Active' WHERE UserID = :userID";
         $stmt = $this->db->prepare($sql);

@@ -26,7 +26,7 @@ function validateCsrfToken($token) {
     return isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token);
 }
 
-$userObj = new User($db); // Instantiate the User class
+$userObj = new User($db);
 
 //fetch user profile
 $stmt = $db->prepare("SELECT User.Username, User.Email, UserProfile.Bio, UserProfile.Gender, UserProfile.FirstLast, UserProfile.BlobProfilePicture FROM User LEFT JOIN UserProfile ON User.UserID = UserProfile.UserID WHERE User.UserID = :userId");
